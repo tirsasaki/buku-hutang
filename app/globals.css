@@ -1,0 +1,32 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --paper: #F6F0E1;
+  --paper-line: #DCD2B8;
+  --ink: #2B3345;
+  --ink-soft: #5B6478;
+  --red: #A5342E;
+  --red-soft: #E9DAD6;
+  --green: #2E6B4F;
+  --green-soft: #DCE9E0;
+  --gold: #B07E2C;
+  --card: #FFFDF8;
+}
+
+body {
+  background-color: var(--paper);
+  background-image: repeating-linear-gradient(var(--paper) 0px, var(--paper) 34px, var(--paper-line) 35px);
+  color: var(--ink);
+  font-family: "Plus Jakarta Sans", sans-serif;
+  min-height: 100vh;
+}
+
+.font-ledger {
+  font-family: "Special Elite", monospace;
+}
+
+.font-mono-num {
+  font-family: "IBM Plex Mono", monospace;
+}
