@@ -68,6 +68,11 @@ export default function LoginPage() {
             onChange={(e) => setPassword(e.target.value)}
             className="w-full px-3 py-2 rounded-lg border border-[var(--paper-line)] bg-white text-sm outline-none focus:border-[var(--gold)]"
           />
+          <div className="text-right mt-1">
+            <Link href="/forgot-password" className="text-[11px] text-[var(--ink-soft)] underline">
+              Lupa password?
+            </Link>
+          </div>
         </div>
 
         {error && <p className="text-xs text-[var(--red)] mb-3">{error}</p>}

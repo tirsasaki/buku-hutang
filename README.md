@@ -193,10 +193,24 @@ Pakai `skema-database.sql` seperti biasa, tapi tambahkan kolom `user_id` di seti
 2. Cari **"Enable email signups"**, **aktifkan** kembali (kebalikan dari setup 1 akun sebelumnya)
 3. Disarankan tetap aktifkan **konfirmasi email** (opsi "Confirm email") — supaya orang yang daftar wajib klik link konfirmasi dulu sebelum bisa login, mengurangi akun asal-asalan
 
+### Aktifkan fitur lupa password
+
+Sekarang ada halaman "Lupa password" yang bisa dipakai pengguna kalau lupa password mereka. Supaya link resetnya berfungsi dengan benar:
+
+1. Menu **Authentication** → **URL Configuration**
+2. Di kolom **Redirect URLs**, tambahkan: `https://domain-anda.com/reset-password` (ganti dengan domain/URL Vercel Anda)
+3. Simpan
+
+Tanpa langkah ini, link reset password yang dikirim ke email pengguna tidak akan berfungsi dengan benar.
+
+---
+
 ### Apa yang berubah di aplikasi
 
 - Ada halaman baru `/signup` untuk daftar akun
-- Halaman login sekarang ada link "Daftar gratis" ke halaman signup
+- Ada halaman baru `/forgot-password` dan `/reset-password` untuk lupa password
+- Halaman login sekarang ada link "Daftar gratis" dan "Lupa password?"
+- Kalau ada yang mencoba daftar pakai email yang sudah terdaftar, muncul pesan yang jelas mengarahkan mereka untuk masuk atau reset password
 - Setiap akun cuma bisa melihat dan mengubah data miliknya sendiri — dijamin oleh Supabase di level database (Row Level Security), bukan cuma di tampilan aplikasi, jadi tetap aman meski ada yang coba akses lewat cara lain
 
 ### Hal yang perlu dipikirkan kalau dibuka untuk umum
