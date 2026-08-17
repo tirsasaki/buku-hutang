@@ -1,53 +1,64 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { supabase } from "../../lib/supabaseClient";
 
-export default function LoginPage() {
+export default function SignupPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [checking, setChecking] = useState(true);
+  const [done, setDone] = useState(false);
   const router = useRouter();
 
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      if (data.session) {
-        router.push("/");
-      } else {
-        setChecking(false);
-      }
-    });
-  }, [router]);
-
-  async function handleLogin(e) {
+  async function handleSignup(e) {
     e.preventDefault();
     setLoading(true);
     setError("");
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    setLoading(false);
-    if (error) {
-      setError("Email atau password salah.");
+    if (password.length < 6) {
+      setError("Password minimal 6 karakter.");
+      setLoading(false);
       return;
     }
-    router.push("/");
+    const { data, error } = await supabase.auth.signUp({ email, password });
+    setLoading(false);
+    if (error) {
+      setError(error.message.includes("already registered") ? "Email ini sudah terdaftar." : "Gagal mendaftar, coba lagi.");
+      return;
+    }
+    if (data.session) {
+      router.push("/");
+    } else {
+      setDone(true);
+    }
   }
 
-  if (checking) {
-    return <div className="min-h-screen flex items-center justify-center text-sm text-[var(--ink-soft)]">Memeriksa sesi...</div>;
+  if (done) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <div className="bg-[var(--card)] border border-[var(--paper-line)] rounded-xl shadow-sm p-6 w-full max-w-sm text-center">
+          <h1 className="font-ledger text-xl mb-2">Cek email Anda</h1>
+          <p className="text-sm text-[var(--ink-soft)]">
+            Kami sudah kirim link konfirmasi ke <b>{email}</b>. Buka email itu dan klik link-nya untuk mengaktifkan akun Anda.
+          </p>
+          <Link href="/login" className="inline-block mt-4 text-sm underline text-[var(--ink)]">
+            Kembali ke halaman login
+          </Link>
+        </div>
+      </div>
+    );
   }
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4">
       <form
-        onSubmit={handleLogin}
+        onSubmit={handleSignup}
         className="bg-[var(--card)] border border-[var(--paper-line)] rounded-xl shadow-sm p-6 w-full max-w-sm"
       >
-        <h1 className="font-ledger text-2xl mb-1">Buku Hutang</h1>
-        <p className="text-sm text-[var(--ink-soft)] mb-5">Masuk untuk mengelola catatan hutang</p>
+        <h1 className="font-ledger text-2xl mb-1">Buat akun baru</h1>
+        <p className="text-sm text-[var(--ink-soft)] mb-5">Mulai catat hutang pelanggan Anda sendiri, gratis</p>
 
         <div className="mb-3">
           <label className="block text-xs text-[var(--ink-soft)] mb-1 font-medium">Email</label>
@@ -68,6 +79,7 @@ export default function LoginPage() {
             onChange={(e) => setPassword(e.target.value)}
             className="w-full px-3 py-2 rounded-lg border border-[var(--paper-line)] bg-white text-sm outline-none focus:border-[var(--gold)]"
           />
+          <p className="text-[11px] text-[var(--ink-soft)] mt-1">Minimal 6 karakter</p>
         </div>
 
         {error && <p className="text-xs text-[var(--red)] mb-3">{error}</p>}
@@ -77,13 +89,13 @@ export default function LoginPage() {
           type="submit"
           className="w-full py-2.5 rounded-lg bg-[var(--ink)] text-[var(--paper)] font-semibold text-sm disabled:opacity-60"
         >
-          {loading ? "Masuk..." : "Masuk"}
+          {loading ? "Mendaftar..." : "Daftar"}
         </button>
 
         <p className="text-xs text-[var(--ink-soft)] text-center mt-4">
-          Belum punya akun?{" "}
-          <Link href="/signup" className="underline text-[var(--ink)]">
-            Daftar gratis
+          Sudah punya akun?{" "}
+          <Link href="/login" className="underline text-[var(--ink)]">
+            Masuk di sini
           </Link>
         </p>
       </form>

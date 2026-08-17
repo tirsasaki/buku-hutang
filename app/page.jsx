@@ -26,6 +26,7 @@ function normalizePhone(phone) {
 export default function HomePage() {
   const router = useRouter();
   const [checkingAuth, setCheckingAuth] = useState(true);
+  const [userId, setUserId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [customers, setCustomers] = useState([]);
   const [debtItems, setDebtItems] = useState([]);
@@ -57,6 +58,7 @@ export default function HomePage() {
       if (!data.session) {
         router.push("/login");
       } else {
+        setUserId(data.session.user.id);
         setCheckingAuth(false);
       }
     });
@@ -74,20 +76,20 @@ export default function HomePage() {
   }, []);
 
   useEffect(() => {
-    if (checkingAuth) return;
+    if (checkingAuth || !userId) return;
     fetchAll();
 
     const channel = supabase
-      .channel("realtime-ledger")
-      .on("postgres_changes", { event: "*", schema: "public", table: "customers" }, fetchAll)
-      .on("postgres_changes", { event: "*", schema: "public", table: "debt_items" }, fetchAll)
-      .on("postgres_changes", { event: "*", schema: "public", table: "payments" }, fetchAll)
+      .channel("realtime-ledger-" + userId)
+      .on("postgres_changes", { event: "*", schema: "public", table: "customers", filter: `user_id=eq.${userId}` }, fetchAll)
+      .on("postgres_changes", { event: "*", schema: "public", table: "debt_items", filter: `user_id=eq.${userId}` }, fetchAll)
+      .on("postgres_changes", { event: "*", schema: "public", table: "payments", filter: `user_id=eq.${userId}` }, fetchAll)
       .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [checkingAuth, fetchAll]);
+  }, [checkingAuth, userId, fetchAll]);
 
   async function handleSignOut() {
     await supabase.auth.signOut();
@@ -503,7 +505,7 @@ export default function HomePage() {
             <div className="mb-4">
               <label className="block text-xs text-[var(--ink-soft)] mb-1 font-medium">Siapa yang menerima uangnya?</label>
               <div className="flex gap-2 flex-wrap mt-1">
-                {["Aryo", "Fuji", "Ibu"].map((name) => (
+                {["Saya", "Istri", "Anak"].map((name) => (
                   <div
                     key={name}
                     onClick={() => {

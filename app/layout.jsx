@@ -18,7 +18,7 @@ export default function RootLayout({ children }) {
       <body>
         {children}
         <footer className="text-center text-[11.5px] text-[var(--ink-soft)] py-4 opacity-70">
-           &copy; 2026 Tirsasaki.
+          Dibuat oleh Tirsasaki &copy; 2026
         </footer>
       </body>
     </html>

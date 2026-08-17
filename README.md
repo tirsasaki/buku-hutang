@@ -170,7 +170,44 @@ git push -u origin main
 
 ---
 
-## ❓ Troubleshooting
+## 🌐 Mengaktifkan mode multi-user (siapa saja bisa daftar akun sendiri)
+
+Secara default, proyek ini disiapkan untuk **1 akun saja**. Kalau Anda ingin membuka aplikasi ini supaya **orang lain juga bisa daftar akun sendiri** dan mencatat buku hutang mereka masing-masing (terpisah, tidak saling lihat data satu sama lain), ikuti langkah berikut:
+
+### Kalau Anda sudah punya data (sudah pakai versi 1 akun sebelumnya)
+
+1. Buka **SQL Editor** di Supabase
+2. Buka file `skema-migrasi-multiuser.sql` di folder ini
+3. **Penting:** sebelum menjalankan, cari baris `GANTI_DENGAN_USER_ID_ANDA` (ada 3 baris), ganti dengan User ID akun Anda sendiri
+   - Cara dapatkan: menu **Authentication** → **Users** → klik akun Anda → copy **User UID**
+4. Paste seluruh script yang sudah diedit ke SQL Editor, klik **Run**
+5. Cek di **Table Editor**, kolom `user_id` di ketiga tabel harus sudah terisi (tidak ada yang kosong)
+
+### Kalau baru mulai dari nol (belum ada data sama sekali)
+
+Pakai `skema-database.sql` seperti biasa, tapi tambahkan kolom `user_id` di setiap tabel dan gunakan bagian "LANGKAH 3" dan "LANGKAH 4" dari `skema-migrasi-multiuser.sql` (skip LANGKAH 1 dan 2 karena belum ada data lama).
+
+### Izinkan orang lain mendaftar
+
+1. Menu **Authentication** → **Providers** (atau **Settings**)
+2. Cari **"Enable email signups"**, **aktifkan** kembali (kebalikan dari setup 1 akun sebelumnya)
+3. Disarankan tetap aktifkan **konfirmasi email** (opsi "Confirm email") — supaya orang yang daftar wajib klik link konfirmasi dulu sebelum bisa login, mengurangi akun asal-asalan
+
+### Apa yang berubah di aplikasi
+
+- Ada halaman baru `/signup` untuk daftar akun
+- Halaman login sekarang ada link "Daftar gratis" ke halaman signup
+- Setiap akun cuma bisa melihat dan mengubah data miliknya sendiri — dijamin oleh Supabase di level database (Row Level Security), bukan cuma di tampilan aplikasi, jadi tetap aman meski ada yang coba akses lewat cara lain
+
+### Hal yang perlu dipikirkan kalau dibuka untuk umum
+
+- **Biaya**: paket gratis Supabase punya batas penyimpanan dan jumlah pengguna aktif bulanan. Kalau makin banyak yang pakai, cek dashboard Supabase Anda untuk tahu kapan perlu upgrade ke paket berbayar
+- **Kebijakan privasi**: karena sekarang menyimpan data orang lain, ada baiknya siapkan halaman sederhana yang menjelaskan data apa yang disimpan dan untuk apa
+- **Dukungan pengguna**: siap-siap ada yang bertanya kalau lupa password atau mengalami kendala
+
+---
+
+
 
 **Error waktu `npm run dev` atau `npm run build`**
 Coba hapus folder `node_modules` dan file `package-lock.json`, lalu `npm install` ulang.
