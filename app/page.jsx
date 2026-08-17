@@ -116,6 +116,7 @@ export default function HomePage() {
     setCustName("");
     setCustPhone("");
     setShowAddCust(false);
+    fetchAll();
   }
 
   async function handleAddDebt(e) {
@@ -137,6 +138,7 @@ export default function HomePage() {
     setDebtQty(1);
     setDebtAmount("");
     setShowAddDebt(false);
+    fetchAll();
   }
 
   function openPayModal(item, mode) {
@@ -182,11 +184,20 @@ export default function HomePage() {
       received_by: finalReceiver,
     });
     setPayTarget(null);
+    fetchAll();
   }
 
   async function deleteDebtItem(itemId) {
     if (!confirm("Hapus catatan hutang ini beserta riwayat pembayarannya?")) return;
     await supabase.from("debt_items").delete().eq("id", itemId);
+    fetchAll();
+  }
+
+  async function deleteCustomer(cust) {
+    if (!confirm(`Hapus pelanggan "${cust.name}" beserta seluruh riwayat hutangnya? Tindakan ini tidak bisa dibatalkan.`)) return;
+    await supabase.from("customers").delete().eq("id", cust.id);
+    setSelectedCustomerId(null);
+    fetchAll();
   }
 
   function buildWaMessage(cust) {
@@ -369,6 +380,19 @@ export default function HomePage() {
                       Lunas
                     </span>
                   )}
+                  {(it.payments || []).length > 0 && (
+                    <div className="mt-2 pt-2 border-t border-dashed border-[var(--paper-line)]">
+                      {it.payments
+                        .slice()
+                        .sort((a, b) => new Date(b.paid_at) - new Date(a.paid_at))
+                        .map((p) => (
+                          <div key={p.id} className="text-[11.5px] text-[var(--ink-soft)] mt-0.5">
+                            {formatRupiah(p.amount)} &middot; diterima oleh {p.received_by} &middot;{" "}
+                            {new Date(p.paid_at).toLocaleDateString("id-ID", { day: "numeric", month: "short" })}
+                          </div>
+                        ))}
+                    </div>
+                  )}
                   <div onClick={() => deleteDebtItem(it.id)} className="text-[11px] text-[var(--ink-soft)] underline cursor-pointer mt-2 inline-block">
                     Hapus barang ini
                   </div>
@@ -390,6 +414,13 @@ export default function HomePage() {
           >
             + Tambah hutang baru
           </button>
+
+          <div
+            onClick={() => deleteCustomer(selectedCustomer)}
+            className="text-center text-sm text-[var(--red)] mt-3.5 cursor-pointer select-none"
+          >
+            Hapus pelanggan ini
+          </div>
         </>
       )}
 
