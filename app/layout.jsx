@@ -1,4 +1,5 @@
 import "./globals.css";
+import { Analytics } from "@vercel/analytics/next";
 
 export const metadata = {
   title: "Buku Hutang",
@@ -20,6 +21,7 @@ export default function RootLayout({ children }) {
         <footer className="text-center text-[11.5px] text-[var(--ink-soft)] py-4 opacity-70">
           Dibuat oleh Tirsasaki &copy; 2026
         </footer>
+        <Analytics />
       </body>
     </html>
   );
