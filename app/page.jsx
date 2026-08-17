@@ -153,11 +153,46 @@ export default function HomePage() {
     setReceiverError(false);
   }
 
+  function openBulkLunasModal() {
+    const items = debtItems.filter((i) => i.customer_id === selectedCustomerId && remainingOf(i) > 0);
+    if (items.length === 0) {
+      alert("Pelanggan ini tidak memiliki hutang aktif.");
+      return;
+    }
+    setPayTarget("ALL");
+    setPayMode("lunas");
+    setPayAmount("");
+    setReceiver("");
+    setReceiverOther("");
+    setPayAmountError(false);
+    setReceiverError(false);
+  }
+
   async function handleConfirmPay(e) {
     e.preventDefault();
     if (!payTarget) return;
-    const remaining = remainingOf(payTarget);
     const finalReceiver = receiverOther.trim() || receiver;
+
+    if (!finalReceiver) {
+      setReceiverError(true);
+      return;
+    }
+    setReceiverError(false);
+
+    if (payTarget === "ALL") {
+      const items = debtItems.filter((i) => i.customer_id === selectedCustomerId && remainingOf(i) > 0);
+      const rows = items.map((it) => ({
+        debt_item_id: it.id,
+        amount: remainingOf(it),
+        received_by: finalReceiver,
+      }));
+      await supabase.from("payments").insert(rows);
+      setPayTarget(null);
+      fetchAll();
+      return;
+    }
+
+    const remaining = remainingOf(payTarget);
     let amount;
     let valid = true;
 
@@ -171,12 +206,6 @@ export default function HomePage() {
       } else {
         setPayAmountError(false);
       }
-    }
-    if (!finalReceiver) {
-      setReceiverError(true);
-      valid = false;
-    } else {
-      setReceiverError(false);
     }
     if (!valid) return;
 
@@ -336,12 +365,20 @@ export default function HomePage() {
             </div>
           </div>
 
-          <button
-            onClick={() => handleShareWa(selectedCustomer)}
-            className="w-full mb-4 py-2.5 rounded-lg bg-[var(--card)] border border-[var(--paper-line)] text-sm font-medium"
-          >
-            Bagikan rincian ke WhatsApp
-          </button>
+          <div className="flex gap-2 mb-4">
+            <button
+              onClick={() => handleShareWa(selectedCustomer)}
+              className="flex-1 py-2.5 rounded-lg bg-[var(--card)] border border-[var(--paper-line)] text-sm font-medium"
+            >
+              Bagikan ke WhatsApp
+            </button>
+            <button
+              onClick={openBulkLunasModal}
+              className="flex-1 py-2.5 rounded-lg bg-[var(--card)] border border-[var(--green-soft)] text-[var(--green)] text-sm font-medium"
+            >
+              Tandai semua lunas
+            </button>
+          </div>
 
           <div className="flex flex-col gap-2.5">
             {customerItems.length === 0 && (
@@ -490,10 +527,20 @@ export default function HomePage() {
       {payTarget && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-5 z-50">
           <form onSubmit={handleConfirmPay} className="bg-[var(--card)] rounded-2xl p-5 w-full max-w-sm">
-            <h2 className="font-ledger text-lg mb-1">{payMode === "lunas" ? "Tandai lunas" : "Bayar sebagian"}</h2>
+            <h2 className="font-ledger text-lg mb-1">{payTarget === "ALL" ? "Tandai semua lunas" : payMode === "lunas" ? "Tandai lunas" : "Bayar sebagian"}</h2>
             <p className="text-xs text-[var(--ink-soft)] mb-3">
-              Sisa hutang {payTarget.item || ""}: {formatRupiah(remainingOf(payTarget))}
-              {payMode === "lunas" ? " — akan ditandai lunas penuh." : ""}
+              {payTarget === "ALL" ? (
+                (() => {
+                  const items = debtItems.filter((i) => i.customer_id === selectedCustomerId && remainingOf(i) > 0);
+                  const total = items.reduce((s, i) => s + remainingOf(i), 0);
+                  return `${items.length} barang, total ${formatRupiah(total)}. Semua akan ditandai lunas penuh.`;
+                })()
+              ) : (
+                <>
+                  Sisa hutang {payTarget.item || ""}: {formatRupiah(remainingOf(payTarget))}
+                  {payMode === "lunas" ? " — akan ditandai lunas penuh." : ""}
+                </>
+              )}
             </p>
             {payMode !== "lunas" && (
               <div className="mb-3">
