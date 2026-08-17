@@ -15,7 +15,12 @@ export default function RootLayout({ children }) {
           rel="stylesheet"
         />
       </head>
-      <body>{children}</body>
+      <body>
+        {children}
+        <footer className="text-center text-[11.5px] text-[var(--ink-soft)] py-4 opacity-70">
+           &copy; 2026 Tirsasaki.
+        </footer>
+      </body>
     </html>
   );
 }
