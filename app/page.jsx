@@ -503,7 +503,7 @@ export default function HomePage() {
             <div className="mb-4">
               <label className="block text-xs text-[var(--ink-soft)] mb-1 font-medium">Siapa yang menerima uangnya?</label>
               <div className="flex gap-2 flex-wrap mt-1">
-                {["Saya", "Istri", "Anak"].map((name) => (
+                {["Aryo", "Fuji", "Ibu"].map((name) => (
                   <div
                     key={name}
                     onClick={() => {
