@@ -1,0 +1,91 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Kertas Klasik — tema bawaan, nuansa buku besar/ledger kertas krem hangat */
+:root,
+[data-theme="klasik"] {
+  --paper: #F6F0E1;
+  --paper-line: #E2D6BA;
+  --ink: #2E271E;
+  --ink-soft: #7C7263;
+  --red: #A5342E;
+  --red-soft: #EFDCD5;
+  --green: #2F6B4C;
+  --green-soft: #DCEADD;
+  --gold: #B07E2C;
+  --card: #FFFDF6;
+}
+
+/* Malam Biru — biru dongker gelap, tenang dan nyaman dipakai malam hari */
+[data-theme="malam"] {
+  --paper: #101521;
+  --paper-line: #1D2532;
+  --ink: #E4E9F2;
+  --ink-soft: #8996AC;
+  --red: #E8756B;
+  --red-soft: #35262A;
+  --green: #6FCF97;
+  --green-soft: #1D2E27;
+  --gold: #E4B872;
+  --card: #161D2A;
+}
+
+/* Hijau Zamrud — hijau hutan gelap, adem dan minim silau */
+[data-theme="zamrud"] {
+  --paper: #0E1712;
+  --paper-line: #1A251E;
+  --ink: #E3EDE6;
+  --ink-soft: #86A092;
+  --red: #E2776D;
+  --red-soft: #33221F;
+  --green: #5FBE8A;
+  --green-soft: #1B2E24;
+  --gold: #D9B26A;
+  --card: #131F19;
+}
+
+/* Krem Lavender — pastel lembut & elegan, terang tapi tidak menyilaukan */
+[data-theme="lavender"] {
+  --paper: #F5F1F8;
+  --paper-line: #E2D9EC;
+  --ink: #362F45;
+  --ink-soft: #837B99;
+  --red: #C15C6B;
+  --red-soft: #F4DEE1;
+  --green: #4C8577;
+  --green-soft: #DCEBE6;
+  --gold: #A47DC4;
+  --card: #FFFDFF;
+}
+
+/* Kopi Senja — cokelat gelap hangat, cocok untuk mata yang gampang lelah */
+[data-theme="kopi"] {
+  --paper: #16100C;
+  --paper-line: #241B14;
+  --ink: #EFE3D6;
+  --ink-soft: #A0907D;
+  --red: #E08D6E;
+  --red-soft: #3A241C;
+  --green: #9BBE6F;
+  --green-soft: #2A2F1D;
+  --gold: #D9A24B;
+  --card: #1D1610;
+}
+
+body {
+  background-color: var(--paper);
+  background-image: repeating-linear-gradient(var(--paper) 0px, var(--paper) 34px, var(--paper-line) 35px);
+  color: var(--ink);
+  font-family: "Plus Jakarta Sans", sans-serif;
+  min-height: 100vh;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.font-ledger {
+  font-family: "Special Elite", monospace;
+}
+
+.font-mono-num {
+  font-family: "IBM Plex Mono", monospace;
+}
