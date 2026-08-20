@@ -190,6 +190,19 @@ export default function HomePage() {
     setBulkItemErrors({});
   }
 
+  function hasKasirData() {
+    return (
+      !!bulkCustomerId ||
+      !!bulkKasir.trim() ||
+      bulkItems.some((r) => r.item.trim() || r.amount !== "" || Number(r.qty) !== 1)
+    );
+  }
+
+  function handleClearKasirForm() {
+    if (hasKasirData() && !confirm("Bersihkan seluruh isian transaksi ini?")) return;
+    resetKasirForm();
+  }
+
   function addBulkRow() {
     setBulkItems((rows) => [...rows, { item: "", qty: 1, amount: "" }]);
   }
@@ -654,9 +667,17 @@ export default function HomePage() {
                   <h2 className="font-ledger text-lg">Transaksi piutang baru</h2>
                   <p className="text-xs text-[var(--ink-soft)] mt-0.5">Catat barang yang diambil pelanggan secara utang</p>
                 </div>
-                <span onClick={resetKasirForm} className="text-xs text-[var(--ink-soft)] underline cursor-pointer shrink-0">
+                <button
+                  type="button"
+                  onClick={handleClearKasirForm}
+                  className="flex items-center gap-1.5 text-xs font-semibold text-[var(--ink-soft)] border border-[var(--paper-line)] rounded-full pl-2.5 pr-3 py-1.5 shrink-0 hover:border-[var(--red)] hover:text-[var(--red)] hover:bg-[var(--red-soft)] active:scale-95 transition-all duration-200"
+                >
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
+                    <path d="M3 6h18M8 6V4.5A1.5 1.5 0 0 1 9.5 3h5A1.5 1.5 0 0 1 16 4.5V6m2 0-.8 13.6a2 2 0 0 1-2 1.9H8.8a2 2 0 0 1-2-1.9L6 6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                    <path d="M10 11v5M14 11v5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                  </svg>
                   Bersihkan
-                </span>
+                </button>
               </div>
 
               <form onSubmit={handleAddDebtBulk}>
@@ -732,9 +753,17 @@ export default function HomePage() {
                           <span className="text-xs font-semibold text-[var(--ink-soft)]">Barang</span>
                         </div>
                         {bulkItems.length > 1 && (
-                          <span onClick={() => removeBulkRow(idx)} className="text-xs text-[var(--red)] underline cursor-pointer">
-                            Hapus
-                          </span>
+                          <button
+                            type="button"
+                            onClick={() => removeBulkRow(idx)}
+                            title="Hapus barang ini"
+                            className="w-6 h-6 rounded-full flex items-center justify-center text-[var(--ink-soft)] hover:bg-[var(--red-soft)] hover:text-[var(--red)] active:scale-90 transition-all duration-200 shrink-0"
+                          >
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
+                              <path d="M3 6h18M8 6V4.5A1.5 1.5 0 0 1 9.5 3h5A1.5 1.5 0 0 1 16 4.5V6m2 0-.8 13.6a2 2 0 0 1-2 1.9H8.8a2 2 0 0 1-2-1.9L6 6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                              <path d="M10 11v5M14 11v5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                            </svg>
+                          </button>
                         )}
                       </div>
                       <input
