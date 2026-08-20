@@ -49,6 +49,9 @@ export default function HomePage() {
   const [debtItems, setDebtItems] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState("terbaru");
+  const [statusFilter, setStatusFilter] = useState("semua");
+  const [showSortMenu, setShowSortMenu] = useState(false);
+  const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
   const [selectedCustomerId, setSelectedCustomerId] = useState(null);
   const [activeTab, setActiveTab] = useState("berjalan");
   const [homeTab, setHomeTab] = useState("pelanggan");
@@ -124,6 +127,7 @@ export default function HomePage() {
   }, [checkingAuth, userId, fetchAll]);
 
   async function handleSignOut() {
+    setShowSignOutConfirm(false);
     await supabase.auth.signOut();
     router.push("/login");
   }
@@ -426,6 +430,11 @@ export default function HomePage() {
   const filteredCustomers = customers
     .filter((c) => !searchTerm || c.name.toLowerCase().includes(searchTerm.toLowerCase()))
     .map((c) => ({ ...c, balance: balanceForCustomer(c.id), last: lastActivityFor(c.id) }))
+    .filter((c) => {
+      if (statusFilter === "belum") return c.balance > 0;
+      if (statusFilter === "lunas") return c.balance <= 0;
+      return true;
+    })
     .sort((a, b) => {
       if (!a.last && !b.last) return a.name.localeCompare(b.name);
       if (!a.last) return 1;
@@ -449,6 +458,19 @@ export default function HomePage() {
 
   const totalUnpaid = customers.reduce((s, c) => s + balanceForCustomer(c.id), 0);
   const countUnpaid = customers.filter((c) => balanceForCustomer(c.id) > 0).length;
+  const totalCustomers = customers.length;
+  const countLunas = totalCustomers - countUnpaid;
+  const unpaidRatio = totalCustomers > 0 ? Math.round((countUnpaid / totalCustomers) * 100) : 0;
+
+  const SORT_OPTIONS = [
+    { id: "terbaru", label: "Terbaru" },
+    { id: "terlama", label: "Terlama" },
+    { id: "nominal-desc", label: "Nominal terbesar" },
+    { id: "nominal-asc", label: "Nominal terkecil" },
+    { id: "nama-az", label: "Nama A–Z" },
+    { id: "nama-za", label: "Nama Z–A" },
+  ];
+  const activeSortLabel = SORT_OPTIONS.find((o) => o.id === sortBy)?.label || "Urutkan";
 
   const customerItems = selectedCustomer
     ? debtItems
@@ -493,179 +515,386 @@ export default function HomePage() {
     <div className={`max-w-xl mx-auto px-4 pt-5 ${!selectedCustomer ? "pb-24" : "pb-10"}`}>
       {!selectedCustomer ? (
         <>
-          <div className="flex items-end justify-between mb-4">
-            <div>
-              <h1 className="font-ledger text-2xl">Buku Hutang</h1>
-              <p className="text-sm text-[var(--ink-soft)] mt-0.5">Catatan hutang pelanggan</p>
+          <div className="flex items-center justify-between mb-5 gap-3">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-11 h-11 rounded-2xl bg-[var(--ink)] flex items-center justify-center shrink-0 shadow-sm">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                  <path
+                    d="M6 4.5h11a1.5 1.5 0 0 1 1.5 1.5v14l-3-1.8-2.5 1.8-2.5-1.8-2.5 1.8-2-1.4V6a1.5 1.5 0 0 1 1.5-1.5Z"
+                    stroke="var(--gold)"
+                    strokeWidth="1.6"
+                    strokeLinejoin="round"
+                  />
+                  <path d="M8.5 8.5h7M8.5 12h7" stroke="var(--gold)" strokeWidth="1.6" strokeLinecap="round" />
+                </svg>
+              </div>
+              <div className="min-w-0">
+                <h1 className="font-ledger text-2xl leading-none truncate">Buku Hutang</h1>
+                <p className="text-xs text-[var(--ink-soft)] mt-1.5 truncate">Catatan hutang pelanggan</p>
+              </div>
             </div>
-            <div className="flex items-center gap-3">
-              <ThemeSwitcher />
-              <button onClick={handleSignOut} className="text-xs text-[var(--ink-soft)] underline">
-                Keluar
+            <div className="flex items-center gap-0.5 bg-[var(--card)] border border-[var(--paper-line)] rounded-full p-1 shadow-sm shrink-0">
+              <ThemeSwitcher variant="plain" />
+              <div className="w-px h-5 bg-[var(--paper-line)]" />
+              <button
+                onClick={() => setShowSignOutConfirm(true)}
+                title="Keluar"
+                className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 text-[var(--ink-soft)] hover:bg-[var(--red-soft)] hover:text-[var(--red)] active:scale-90 transition-all duration-200"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  <path d="M16 17l5-5-5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  <path d="M21 12H9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
               </button>
             </div>
           </div>
 
-          <div className="bg-[var(--card)] border border-[var(--paper-line)] rounded-xl shadow-sm p-4 mb-4">
-            <div className="text-xs text-[var(--ink-soft)] uppercase tracking-wide">Total belum lunas</div>
-            <div className="font-mono-num text-2xl font-semibold text-[var(--red)]">{formatRupiah(totalUnpaid)}</div>
-            <div className="text-xs text-[var(--ink-soft)] mt-0.5">{countUnpaid} pelanggan</div>
+          <div className="relative overflow-hidden bg-[var(--card)] border border-[var(--paper-line)] rounded-2xl shadow-sm mb-5">
+            <div
+              className="absolute -top-10 -right-10 w-32 h-32 rounded-full opacity-[0.10] pointer-events-none"
+              style={{ background: "var(--red)" }}
+            />
+            <div
+              className="absolute -bottom-12 -left-8 w-28 h-28 rounded-full opacity-[0.06] pointer-events-none"
+              style={{ background: "var(--gold)" }}
+            />
+            <div className="relative p-4">
+              <div className="flex items-center gap-3.5">
+                <div className="w-11 h-11 rounded-xl bg-[var(--red-soft)] flex items-center justify-center shrink-0">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                    <path
+                      d="M12 2v20M17 6.5c0-1.93-2.24-3.5-5-3.5S7 4.57 7 6.5 9.24 9 12 9s5 1.07 5 3.5-2.24 3.5-5 3.5-5-1.07-5-3.5"
+                      stroke="var(--red)"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="text-xs text-[var(--ink-soft)] uppercase tracking-wide font-medium">Total belum lunas</div>
+                  <div className="font-mono-num text-[28px] leading-tight font-bold text-[var(--red)] truncate">{formatRupiah(totalUnpaid)}</div>
+                </div>
+              </div>
+
+              {totalCustomers > 0 && (
+                <>
+                  <div className="h-1.5 rounded-full bg-[var(--paper-line)] mt-4 overflow-hidden">
+                    <div
+                      className="h-full rounded-full bg-[var(--red)] transition-all duration-500"
+                      style={{ width: `${unpaidRatio}%` }}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between mt-3 gap-2">
+                    <div className="flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-[var(--red)] shrink-0" />
+                      <span className="text-xs text-[var(--ink-soft)]">
+                        <span className="font-semibold text-[var(--ink)]">{countUnpaid}</span> belum lunas
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-[var(--green)] shrink-0" />
+                      <span className="text-xs text-[var(--ink-soft)]">
+                        <span className="font-semibold text-[var(--ink)]">{countLunas}</span> lunas
+                      </span>
+                    </div>
+                    <div className="text-xs text-[var(--ink-soft)] ml-auto">{totalCustomers} pelanggan</div>
+                  </div>
+                </>
+              )}
+            </div>
           </div>
 
-          <div className="flex border border-[var(--paper-line)] rounded-xl overflow-hidden mb-4 text-sm font-medium">
+          <div className="relative flex bg-[var(--card)] border border-[var(--paper-line)] rounded-full p-1 mb-5 text-sm font-semibold">
+            <div
+              className="absolute top-1 bottom-1 w-[calc(50%-4px)] rounded-full bg-[var(--ink)] shadow-sm transition-transform duration-300 ease-out"
+              style={{ transform: homeTab === "kasir" ? "translateX(0%)" : "translateX(calc(100% + 8px))" }}
+            />
             <div
               onClick={() => setHomeTab("kasir")}
-              className={`flex-1 text-center py-2.5 cursor-pointer select-none ${
-                homeTab === "kasir" ? "bg-[var(--ink)] text-[var(--paper)]" : "bg-[var(--card)] text-[var(--ink-soft)]"
+              className={`relative z-10 flex-1 flex items-center justify-center gap-1.5 text-center py-2 rounded-full cursor-pointer select-none transition-colors duration-200 ${
+                homeTab === "kasir" ? "text-[var(--paper)]" : "text-[var(--ink-soft)]"
               }`}
             >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
+                <path
+                  d="M3 9h18M5 9l1.5-5h11L19 9M5 9v9a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V9M9 13h6"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
               Kasir
             </div>
             <div
               onClick={() => setHomeTab("pelanggan")}
-              className={`flex-1 text-center py-2.5 cursor-pointer select-none ${
-                homeTab === "pelanggan" ? "bg-[var(--ink)] text-[var(--paper)]" : "bg-[var(--card)] text-[var(--ink-soft)]"
+              className={`relative z-10 flex-1 flex items-center justify-center gap-1.5 text-center py-2 rounded-full cursor-pointer select-none transition-colors duration-200 ${
+                homeTab === "pelanggan" ? "text-[var(--paper)]" : "text-[var(--ink-soft)]"
               }`}
             >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
+                <path
+                  d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
               Pelanggan
             </div>
           </div>
 
           {homeTab === "kasir" ? (
             <div>
-              <div className="flex items-center justify-between mb-3">
-                <h2 className="font-ledger text-lg">Transaksi piutang baru</h2>
-                <span onClick={resetKasirForm} className="text-xs text-[var(--ink-soft)] underline cursor-pointer">
-                  Bersihkan form
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h2 className="font-ledger text-lg">Transaksi piutang baru</h2>
+                  <p className="text-xs text-[var(--ink-soft)] mt-0.5">Catat barang yang diambil pelanggan secara utang</p>
+                </div>
+                <span onClick={resetKasirForm} className="text-xs text-[var(--ink-soft)] underline cursor-pointer shrink-0">
+                  Bersihkan
                 </span>
               </div>
 
               <form onSubmit={handleAddDebtBulk}>
-                <div className="mb-3">
-                  <label className="block text-xs text-[var(--ink-soft)] mb-1 font-medium">Pelanggan</label>
-                  <select
-                    value={bulkCustomerId}
-                    onChange={(e) => setBulkCustomerId(e.target.value)}
-                    className="w-full px-3 py-2 rounded-lg border border-[var(--paper-line)] bg-[var(--card)] text-sm"
-                  >
-                    <option value="">Pilih pelanggan...</option>
-                    {customers.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.name}
-                      </option>
-                    ))}
-                  </select>
-                  {bulkCustomerError && <div className="text-xs text-[var(--red)] mt-1">Pilih pelanggan dulu</div>}
-                </div>
-
-                <div className="mb-4">
-                  <label className="block text-xs text-[var(--ink-soft)] mb-1 font-medium">Tanggal</label>
-                  <input type="date" value={bulkDate} onChange={(e) => setBulkDate(e.target.value)} className="w-full px-3 py-2 rounded-lg border border-[var(--paper-line)] text-sm" />
-                </div>
-
-                <div className="mb-4">
-                  <label className="block text-xs text-[var(--ink-soft)] mb-1 font-medium">Kasir (opsional)</label>
-                  <div className="flex gap-2 flex-wrap mb-2">
-                    {["Saya", "Fuji", "Ibu"].map((name) => (
-                      <div
-                        key={name}
-                        onClick={() => setBulkKasir(name)}
-                        className={`px-3 py-1.5 rounded-full border text-xs cursor-pointer ${bulkKasir === name ? "bg-[var(--gold)] border-[var(--gold)] text-white" : "border-[var(--paper-line)]"}`}
-                      >
-                        {name}
-                      </div>
-                    ))}
+                <div className="bg-[var(--card)] border border-[var(--paper-line)] rounded-2xl shadow-sm p-4 mb-3 space-y-3">
+                  <div>
+                    <label className="block text-xs text-[var(--ink-soft)] mb-1.5 font-medium">Pelanggan</label>
+                    <select
+                      value={bulkCustomerId}
+                      onChange={(e) => setBulkCustomerId(e.target.value)}
+                      className={`w-full px-3 py-2.5 rounded-xl border bg-[var(--paper)] text-sm outline-none focus:border-[var(--gold)] transition-colors ${
+                        bulkCustomerError ? "border-[var(--red)]" : "border-[var(--paper-line)]"
+                      }`}
+                    >
+                      <option value="">Pilih pelanggan...</option>
+                      {customers.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.name}
+                        </option>
+                      ))}
+                    </select>
+                    {bulkCustomerError && <div className="text-xs text-[var(--red)] mt-1">Pilih pelanggan dulu</div>}
                   </div>
-                  <input
-                    value={bulkKasir}
-                    onChange={(e) => setBulkKasir(e.target.value)}
-                    placeholder="Atau ketik nama kasir"
-                    className="w-full px-3 py-2 rounded-lg border border-[var(--paper-line)] text-sm"
-                  />
+
+                  <div className="flex gap-3">
+                    <div className="flex-1">
+                      <label className="block text-xs text-[var(--ink-soft)] mb-1.5 font-medium">Tanggal</label>
+                      <input
+                        type="date"
+                        value={bulkDate}
+                        onChange={(e) => setBulkDate(e.target.value)}
+                        className="w-full px-3 py-2.5 rounded-xl border border-[var(--paper-line)] bg-[var(--paper)] text-sm outline-none focus:border-[var(--gold)] transition-colors"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs text-[var(--ink-soft)] mb-1.5 font-medium">Kasir (opsional)</label>
+                    <div className="flex gap-2 flex-wrap mb-2">
+                      {["Saya", "Fuji", "Ibu"].map((name) => (
+                        <div
+                          key={name}
+                          onClick={() => setBulkKasir(name)}
+                          className={`px-3 py-1.5 rounded-full border text-xs cursor-pointer transition-colors ${
+                            bulkKasir === name ? "bg-[var(--gold)] border-[var(--gold)] text-white" : "border-[var(--paper-line)] text-[var(--ink-soft)]"
+                          }`}
+                        >
+                          {name}
+                        </div>
+                      ))}
+                    </div>
+                    <input
+                      value={bulkKasir}
+                      onChange={(e) => setBulkKasir(e.target.value)}
+                      placeholder="Atau ketik nama kasir"
+                      className="w-full px-3 py-2.5 rounded-xl border border-[var(--paper-line)] bg-[var(--paper)] text-sm outline-none focus:border-[var(--gold)] transition-colors"
+                    />
+                  </div>
                 </div>
 
-                <div className="space-y-3">
+                <div className="flex items-center justify-between mb-2 px-1">
+                  <span className="text-xs font-semibold text-[var(--ink-soft)] uppercase tracking-wide">Daftar barang</span>
+                  <span className="text-xs text-[var(--ink-soft)]">{bulkItems.length} item</span>
+                </div>
+
+                <div className="space-y-2.5">
                   {bulkItems.map((row, idx) => (
-                    <div key={idx} className="border border-[var(--paper-line)] rounded-xl p-3">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-xs font-semibold text-[var(--ink-soft)] uppercase tracking-wide">Barang #{idx + 1}</span>
+                    <div key={idx} className="bg-[var(--card)] border border-[var(--paper-line)] rounded-2xl shadow-sm p-3.5">
+                      <div className="flex items-center justify-between mb-2.5">
+                        <div className="flex items-center gap-2">
+                          <span className="w-5 h-5 rounded-full bg-[var(--gold)] text-white text-[10px] font-bold flex items-center justify-center shrink-0">
+                            {idx + 1}
+                          </span>
+                          <span className="text-xs font-semibold text-[var(--ink-soft)]">Barang</span>
+                        </div>
                         {bulkItems.length > 1 && (
                           <span onClick={() => removeBulkRow(idx)} className="text-xs text-[var(--red)] underline cursor-pointer">
                             Hapus
                           </span>
                         )}
                       </div>
-                      <div className="mb-2">
-                        <label className="block text-xs text-[var(--ink-soft)] mb-1 font-medium">Barang</label>
-                        <input
-                          value={row.item}
-                          onChange={(e) => updateBulkRow(idx, "item", e.target.value)}
-                          placeholder="Contoh: Beras 5kg"
-                          className="w-full px-3 py-2 rounded-lg border border-[var(--paper-line)] text-sm"
-                        />
-                      </div>
+                      <input
+                        value={row.item}
+                        onChange={(e) => updateBulkRow(idx, "item", e.target.value)}
+                        placeholder="Contoh: Beras 5kg"
+                        className="w-full px-3 py-2.5 rounded-xl border border-[var(--paper-line)] bg-[var(--paper)] text-sm mb-2 outline-none focus:border-[var(--gold)] transition-colors"
+                      />
                       <div className="flex gap-2">
                         <div className="flex-1">
-                          <label className="block text-xs text-[var(--ink-soft)] mb-1 font-medium">Qty (pcs)</label>
+                          <label className="block text-[11px] text-[var(--ink-soft)] mb-1 font-medium">Qty (pcs)</label>
                           <input
                             type="number"
                             min="1"
                             value={row.qty}
                             onChange={(e) => updateBulkRow(idx, "qty", e.target.value)}
-                            className="w-full px-3 py-2 rounded-lg border border-[var(--paper-line)] text-sm"
+                            className="w-full px-3 py-2 rounded-xl border border-[var(--paper-line)] bg-[var(--paper)] text-sm outline-none focus:border-[var(--gold)] transition-colors"
                           />
                         </div>
-                        <div className="flex-1">
-                          <label className="block text-xs text-[var(--ink-soft)] mb-1 font-medium">Harga total (Rp)</label>
+                        <div className="flex-[2]">
+                          <label className="block text-[11px] text-[var(--ink-soft)] mb-1 font-medium">Harga total (Rp)</label>
                           <input
                             type="number"
                             min="0"
                             value={row.amount}
                             onChange={(e) => updateBulkRow(idx, "amount", e.target.value)}
-                            className="w-full px-3 py-2 rounded-lg border border-[var(--paper-line)] text-sm"
+                            className="w-full px-3 py-2 rounded-xl border border-[var(--paper-line)] bg-[var(--paper)] text-sm outline-none focus:border-[var(--gold)] transition-colors"
                           />
                         </div>
                       </div>
-                      {bulkItemErrors[idx] && <div className="text-xs text-[var(--red)] mt-1">Masukkan jumlah yang benar</div>}
+                      {bulkItemErrors[idx] && <div className="text-xs text-[var(--red)] mt-1.5">Masukkan jumlah yang benar</div>}
                     </div>
                   ))}
                 </div>
 
-                <div onClick={addBulkRow} className="text-center text-sm text-[var(--gold)] font-semibold mt-3 cursor-pointer select-none">
-                  + Tambah barang lain
+                <button
+                  type="button"
+                  onClick={addBulkRow}
+                  className="w-full mt-3 py-2.5 rounded-xl border border-dashed border-[var(--paper-line)] text-sm text-[var(--gold)] font-semibold cursor-pointer select-none flex items-center justify-center gap-1.5 hover:bg-[var(--card)] transition-colors"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                    <line x1="12" y1="4" x2="12" y2="20" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+                    <line x1="4" y1="12" x2="20" y2="12" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+                  </svg>
+                  Tambah barang lain
+                </button>
+
+                <div className="bg-[var(--card)] border border-[var(--paper-line)] rounded-2xl shadow-sm p-4 mt-4 mb-3 flex items-center justify-between">
+                  <span className="text-sm text-[var(--ink-soft)] font-medium">Total transaksi</span>
+                  <span className="font-mono-num text-lg font-semibold text-[var(--red)]">
+                    {formatRupiah(bulkItems.reduce((sum, r) => sum + (parseFloat(r.amount) || 0), 0))}
+                  </span>
                 </div>
 
-                <button type="submit" className="w-full mt-5 py-2.5 rounded-xl bg-[var(--green)] text-white text-sm font-semibold">
+                <button type="submit" className="w-full py-3 rounded-xl bg-[var(--green)] text-white text-sm font-semibold shadow-sm active:scale-[0.99] transition-transform">
                   Simpan transaksi
                 </button>
               </form>
             </div>
           ) : (
             <>
-              <input
-                type="text"
-                placeholder="Cari nama pelanggan..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full px-3 py-2 rounded-lg border border-[var(--paper-line)] bg-[var(--card)] text-sm mb-3 outline-none focus:border-[var(--gold)]"
-              />
+              <div className="flex gap-2 mb-3">
+                <div className="relative flex-1 min-w-0">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--ink-soft)] pointer-events-none">
+                    <circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="2" />
+                    <path d="M21 21l-3.5-3.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                  </svg>
+                  <input
+                    type="text"
+                    placeholder="Cari nama pelanggan..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full pl-9 pr-8 py-2.5 rounded-xl border border-[var(--paper-line)] bg-[var(--card)] text-sm outline-none focus:border-[var(--gold)] transition-colors"
+                  />
+                  {searchTerm && (
+                    <div
+                      onClick={() => setSearchTerm("")}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-[var(--paper-line)] flex items-center justify-center cursor-pointer"
+                    >
+                      <svg width="9" height="9" viewBox="0 0 24 24" fill="none">
+                        <path d="M18 6L6 18M6 6l12 12" stroke="var(--ink-soft)" strokeWidth="2.5" strokeLinecap="round" />
+                      </svg>
+                    </div>
+                  )}
+                </div>
+                <div className="relative shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setShowSortMenu((v) => !v)}
+                    title="Urutkan"
+                    className={`w-[42px] h-[42px] rounded-xl border flex items-center justify-center transition-colors ${
+                      showSortMenu ? "border-[var(--gold)] bg-[var(--card)] text-[var(--gold)]" : "border-[var(--paper-line)] bg-[var(--card)] text-[var(--ink-soft)]"
+                    }`}
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                      <path d="M4 6h16M7 12h10M10 18h4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                    </svg>
+                  </button>
+                  {showSortMenu && (
+                    <>
+                      <div className="fixed inset-0 z-10" onClick={() => setShowSortMenu(false)} />
+                      <div className="absolute right-0 mt-2 w-52 bg-[var(--card)] border border-[var(--paper-line)] rounded-xl shadow-lg z-20 p-1.5">
+                        <div className="text-[10px] font-semibold uppercase tracking-wide text-[var(--ink-soft)] px-2.5 pt-1.5 pb-1">Urutkan</div>
+                        {SORT_OPTIONS.map((opt) => (
+                          <div
+                            key={opt.id}
+                            onClick={() => {
+                              setSortBy(opt.id);
+                              setShowSortMenu(false);
+                            }}
+                            className={`px-2.5 py-2 rounded-lg text-sm cursor-pointer flex items-center justify-between select-none ${
+                              sortBy === opt.id ? "bg-[var(--paper)] text-[var(--gold)] font-semibold" : "text-[var(--ink-soft)] hover:bg-[var(--paper)]"
+                            }`}
+                          >
+                            {opt.label}
+                            {sortBy === opt.id && (
+                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
+                                <path d="M20 6L9 17l-5-5" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                              </svg>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
 
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                className="w-full px-3 py-2 rounded-lg border border-[var(--paper-line)] bg-[var(--card)] text-sm mb-4 outline-none focus:border-[var(--gold)]"
-              >
-                <option value="terbaru">Terbaru</option>
-                <option value="terlama">Terlama</option>
-                <option value="nominal-desc">Nominal terbesar</option>
-                <option value="nominal-asc">Nominal terkecil</option>
-                <option value="nama-az">Nama A–Z</option>
-                <option value="nama-za">Nama Z–A</option>
-              </select>
+              <div className="flex gap-2 mb-4">
+                {[
+                  { id: "semua", label: "Semua" },
+                  { id: "belum", label: "Belum lunas" },
+                  { id: "lunas", label: "Lunas" },
+                ].map((f) => (
+                  <div
+                    key={f.id}
+                    onClick={() => setStatusFilter(f.id)}
+                    className={`px-3 py-1.5 rounded-full border text-xs font-medium cursor-pointer select-none transition-colors ${
+                      statusFilter === f.id ? "bg-[var(--ink)] border-[var(--ink)] text-[var(--paper)]" : "border-[var(--paper-line)] text-[var(--ink-soft)] hover:border-[var(--gold)]"
+                    }`}
+                  >
+                    {f.label}
+                  </div>
+                ))}
+              </div>
 
               <div className="flex flex-col gap-2.5">
                 {filteredCustomers.length === 0 && (
-                  <div className="text-center py-10 text-sm text-[var(--ink-soft)]">Belum ada pelanggan tercatat.</div>
+                  <div className="text-center py-14 text-sm text-[var(--ink-soft)]">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" className="mx-auto mb-2 opacity-40">
+                      <path
+                        d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                    {searchTerm || statusFilter !== "semua" ? "Tidak ada pelanggan yang cocok." : "Belum ada pelanggan tercatat."}
+                  </div>
                 )}
                 {filteredCustomers.map((c) => {
                   const isLunas = c.balance <= 0;
@@ -677,31 +906,51 @@ export default function HomePage() {
                     <div
                       key={c.id}
                       onClick={() => selectCustomer(c.id)}
-                      style={{ borderLeft: `4px solid ${ccolor}` }}
-                      className={`bg-[var(--card)] border border-[var(--paper-line)] rounded-xl shadow-sm p-3.5 cursor-pointer ${isLunas ? "opacity-70" : ""}`}
+                      className={`relative overflow-hidden bg-[var(--card)] border border-[var(--paper-line)] rounded-2xl shadow-sm pl-4 pr-3.5 py-3.5 cursor-pointer hover:border-[var(--gold)] hover:shadow-md active:scale-[0.99] transition-all duration-200 ${
+                        isLunas ? "opacity-75" : ""
+                      }`}
                     >
-                      <div className="flex justify-between items-start gap-2">
-                        <div className="flex items-center gap-2.5 min-w-0">
+                      <div
+                        className="absolute left-0 top-0 bottom-0 w-1"
+                        style={{ background: isLunas ? "var(--green)" : "var(--red)" }}
+                      />
+                      <div className="flex justify-between items-center gap-3">
+                        <div className="flex items-center gap-3 min-w-0">
                           <div
-                            style={{ backgroundColor: ccolor }}
-                            className="w-8 h-8 rounded-full flex items-center justify-center text-white text-[11px] font-bold shrink-0"
+                            style={{ backgroundColor: ccolor, boxShadow: `0 0 0 3px ${ccolor}22` }}
+                            className="w-10 h-10 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0"
                           >
                             {customerInitials(c.name)}
                           </div>
                           <div className="min-w-0">
                             <div className="font-semibold text-sm truncate">{c.name}</div>
-                            <div className="text-xs text-[var(--ink-soft)] mt-0.5">Aktivitas terakhir: {lastStr}</div>
+                            <div className="text-xs text-[var(--ink-soft)] mt-0.5 flex items-center gap-1">
+                              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" className="shrink-0">
+                                <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2" />
+                                <path d="M12 7v5l3 3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                              </svg>
+                              <span className="truncate">{lastStr}</span>
+                            </div>
                           </div>
                         </div>
-                        <div className="text-right shrink-0">
-                          <div className={`font-mono-num text-base font-semibold ${isLunas ? "text-[var(--green)]" : "text-[var(--red)]"}`}>
-                            {formatRupiah(c.balance)}
+                        <div className="text-right shrink-0 flex items-center gap-1.5">
+                          <div>
+                            <div className={`font-mono-num text-base font-semibold ${isLunas ? "text-[var(--green)]" : "text-[var(--red)]"}`}>
+                              {formatRupiah(c.balance)}
+                            </div>
+                            {isLunas ? (
+                              <span className="inline-block text-[11px] font-semibold px-2 py-0.5 rounded-full bg-[var(--green-soft)] text-[var(--green)] mt-1">
+                                Lunas
+                              </span>
+                            ) : (
+                              <span className="inline-block text-[11px] font-medium px-2 py-0.5 rounded-full bg-[var(--red-soft)] text-[var(--red)] mt-1">
+                                Belum lunas
+                              </span>
+                            )}
                           </div>
-                          {isLunas && (
-                            <span className="inline-block text-[11px] font-semibold px-2 py-0.5 rounded-full bg-[var(--green-soft)] text-[var(--green)] mt-1">
-                              Lunas
-                            </span>
-                          )}
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="text-[var(--ink-soft)] opacity-40 shrink-0">
+                            <path d="M9 18l6-6-6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                          </svg>
                         </div>
                       </div>
                     </div>
@@ -730,18 +979,6 @@ export default function HomePage() {
             </button>
           )}
 
-          {homeTab === "kasir" && (
-            <button
-              onClick={addBulkRow}
-              title="Tambah baris barang"
-              className="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-[var(--gold)] text-white shadow-lg flex items-center justify-center z-30 active:scale-90 transition-transform duration-200"
-            >
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-                <line x1="12" y1="4" x2="12" y2="20" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
-                <line x1="4" y1="12" x2="20" y2="12" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
-              </svg>
-            </button>
-          )}
         </>
       ) : (
         <>
@@ -795,22 +1032,44 @@ export default function HomePage() {
             </button>
           </div>
 
-          <div className="flex border border-[var(--paper-line)] rounded-xl overflow-hidden mb-3.5 text-sm font-medium">
+          <div className="relative flex bg-[var(--card)] border border-[var(--paper-line)] rounded-xl p-1 mb-3.5 text-sm font-medium">
+            <div
+              className="absolute top-1 bottom-1 w-[calc(50%-4px)] rounded-lg bg-[var(--ink)] shadow-sm transition-transform duration-300 ease-out"
+              style={{ transform: activeTab === "berjalan" ? "translateX(0%)" : "translateX(calc(100% + 8px))" }}
+            />
             <div
               onClick={() => setActiveTab("berjalan")}
-              className={`flex-1 text-center py-2.5 cursor-pointer select-none ${
-                activeTab === "berjalan" ? "bg-[var(--ink)] text-[var(--paper)]" : "bg-[var(--card)] text-[var(--ink-soft)]"
+              className={`relative z-10 flex-1 flex items-center justify-center gap-1.5 text-center py-2.5 rounded-lg cursor-pointer select-none transition-colors duration-200 ${
+                activeTab === "berjalan" ? "text-[var(--paper)]" : "text-[var(--ink-soft)]"
               }`}
             >
-              Transaksi berjalan{ongoingItems.length > 0 ? ` (${ongoingItems.length})` : ""}
+              Berjalan
+              {ongoingItems.length > 0 && (
+                <span
+                  className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
+                    activeTab === "berjalan" ? "bg-white/20 text-[var(--paper)]" : "bg-[var(--red-soft)] text-[var(--red)]"
+                  }`}
+                >
+                  {ongoingItems.length}
+                </span>
+              )}
             </div>
             <div
               onClick={() => setActiveTab("selesai")}
-              className={`flex-1 text-center py-2.5 cursor-pointer select-none ${
-                activeTab === "selesai" ? "bg-[var(--ink)] text-[var(--paper)]" : "bg-[var(--card)] text-[var(--ink-soft)]"
+              className={`relative z-10 flex-1 flex items-center justify-center gap-1.5 text-center py-2.5 rounded-lg cursor-pointer select-none transition-colors duration-200 ${
+                activeTab === "selesai" ? "text-[var(--paper)]" : "text-[var(--ink-soft)]"
               }`}
             >
-              Transaksi selesai{doneItems.length > 0 ? ` (${doneItems.length})` : ""}
+              Selesai
+              {doneItems.length > 0 && (
+                <span
+                  className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
+                    activeTab === "selesai" ? "bg-white/20 text-[var(--paper)]" : "bg-[var(--green-soft)] text-[var(--green)]"
+                  }`}
+                >
+                  {doneItems.length}
+                </span>
+              )}
             </div>
           </div>
 
@@ -975,6 +1234,39 @@ export default function HomePage() {
             Hapus pelanggan ini
           </div>
         </>
+      )}
+
+      {/* Modal: Konfirmasi keluar */}
+      {showSignOutConfirm && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-5 z-50">
+          <div className="bg-[var(--card)] rounded-2xl p-5 w-full max-w-sm shadow-xl">
+            <div className="w-11 h-11 rounded-full bg-[var(--red-soft)] flex items-center justify-center mb-3">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" stroke="var(--red)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                <path d="M16 17l5-5-5-5" stroke="var(--red)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                <path d="M21 12H9" stroke="var(--red)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </div>
+            <h2 className="font-ledger text-lg mb-1">Keluar dari akun?</h2>
+            <p className="text-xs text-[var(--ink-soft)] mb-4">Kamu perlu masuk kembali untuk mengakses catatan hutang pelanggan.</p>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setShowSignOutConfirm(false)}
+                className="flex-1 py-2 rounded-lg border border-[var(--paper-line)] text-sm text-[var(--ink-soft)]"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={handleSignOut}
+                className="flex-1 py-2 rounded-lg bg-[var(--red)] text-white text-sm font-medium"
+              >
+                Ya, keluar
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Modal: Edit nomor WA */}
