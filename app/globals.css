@@ -75,11 +75,31 @@
 
 body {
   background-color: var(--paper);
-  background-image: repeating-linear-gradient(var(--paper) 0px, var(--paper) 34px, var(--paper-line) 35px);
   color: var(--ink);
   font-family: "Plus Jakarta Sans", sans-serif;
   min-height: 100vh;
   transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+/* Tekstur latar "sobekan catatan" — ikon nota/kertas kecil yang diulang sangat
+   samar di seluruh halaman (login maupun dashboard), agar keduanya senada.
+   Menggunakan mask (bukan warna langsung) supaya otomatis mengikuti --ink
+   pada tiap tema, dan diletakkan di belakang semua konten (z-index -1). */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background-color: var(--ink);
+  opacity: 0.032;
+  -webkit-mask-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNDAiIGhlaWdodD0iMjQwIiB2aWV3Qm94PSIwIDAgMjQwIDI0MCI+CiAgPGcgZmlsbD0iIzAwMDAwMCIgZmlsbC1ydWxlPSJldmVub2RkIj4KICAgIDwhLS0gc3RpY2t5IG5vdGUgMSAod2l0aCBmb2xkZWQgY29ybmVyICsgcnVsZWQgbGluZXMpIC0tPgogICAgPGcgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoMjYsMzApIHJvdGF0ZSgtMTIpIj4KICAgICAgPHBhdGggZD0iTTIgMkgyNEwzMiAxMFYzMlEzMiAzNCAzMCAzNEgyUTAgMzQgMCAzMlY0UTAgMiAyIDJaCiAgICAgICAgICAgICAgIE02IDE0SDI0VjE2LjVINloKICAgICAgICAgICAgICAgTTYgMjBIMjRWMjIuNUg2WgogICAgICAgICAgICAgICBNNiAyNkgxOFYyOC41SDZaIi8+CiAgICA8L2c+CiAgICA8IS0tIHN0aWNreSBub3RlIDIgKHNtYWxsZXIsIHdpdGggZm9sZGVkIGNvcm5lciArIGxpbmVzKSAtLT4KICAgIDxnIHRyYW5zZm9ybT0idHJhbnNsYXRlKDE1MCw1NCkgcm90YXRlKDkpIHNjYWxlKDAuNzIpIj4KICAgICAgPHBhdGggZD0iTTIgMkgyNEwzMiAxMFYzMlEzMiAzNCAzMCAzNEgyUTAgMzQgMCAzMlY0UTAgMiAyIDJaCiAgICAgICAgICAgICAgIE02IDE0SDI0VjE2LjVINloKICAgICAgICAgICAgICAgTTYgMjBIMjRWMjIuNUg2WgogICAgICAgICAgICAgICBNNiAyNkgxOFYyOC41SDZaIi8+CiAgICA8L2c+CiAgICA8IS0tIHJlY2VpcHQgLyBub3RlIHN0cmlwIHdpdGggdG9ybiBib3R0b20gZWRnZSAtLT4KICAgIDxnIHRyYW5zZm9ybT0idHJhbnNsYXRlKDE3NiwxMzgpIHJvdGF0ZSgxNykiPgogICAgICA8cGF0aCBkPSJNMCAwSDI2VjIyTDIzIDI2TDIwIDIyTDE3IDI2TDE0IDIyTDExIDI2TDggMjJMNSAyNkwyIDIyTDAgMjZaCiAgICAgICAgICAgICAgIE00IDZIMjJWOC40SDRaCiAgICAgICAgICAgICAgIE00IDExSDIyVjEzLjRINFoKICAgICAgICAgICAgICAgTTQgMTZIMTZWMTguNEg0WiIvPgogICAgPC9nPgogICAgPCEtLSBzbWFsbCBub3RlIDMgLS0+CiAgICA8ZyB0cmFuc2Zvcm09InRyYW5zbGF0ZSgxMTIsMTkwKSByb3RhdGUoNikgc2NhbGUoMC42KSI+CiAgICAgIDxwYXRoIGQ9Ik0yIDJIMjRMMzIgMTBWMzJRMzIgMzQgMzAgMzRIMlEwIDM0IDAgMzJWNFEwIDIgMiAyWgogICAgICAgICAgICAgICBNNiAxNEgyNFYxNi41SDZaCiAgICAgICAgICAgICAgIE02IDIwSDI0VjIyLjVINloiLz4KICAgIDwvZz4KICA8L2c+CiAgPCEtLSBwYXBlcmNsaXAgLS0+CiAgPGcgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoNTYsMTY0KSByb3RhdGUoLTIwKSIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMDAwMDAwIiBzdHJva2Utd2lkdGg9IjIuNiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj4KICAgIDxwYXRoIGQ9Ik00IDRDNCAxLjggNS44IDAgOCAwUzEyIDEuOCAxMiA0VjIwQzEyIDIzLjMgOS4zIDI2IDYgMjZTMCAyMy4zIDAgMjBWOEMwIDYuOSAwLjkgNiAyIDZTNCA2LjkgNCA4VjE5Ii8+CiAgPC9nPgo8L3N2Zz4=");
+  mask-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNDAiIGhlaWdodD0iMjQwIiB2aWV3Qm94PSIwIDAgMjQwIDI0MCI+CiAgPGcgZmlsbD0iIzAwMDAwMCIgZmlsbC1ydWxlPSJldmVub2RkIj4KICAgIDwhLS0gc3RpY2t5IG5vdGUgMSAod2l0aCBmb2xkZWQgY29ybmVyICsgcnVsZWQgbGluZXMpIC0tPgogICAgPGcgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoMjYsMzApIHJvdGF0ZSgtMTIpIj4KICAgICAgPHBhdGggZD0iTTIgMkgyNEwzMiAxMFYzMlEzMiAzNCAzMCAzNEgyUTAgMzQgMCAzMlY0UTAgMiAyIDJaCiAgICAgICAgICAgICAgIE02IDE0SDI0VjE2LjVINloKICAgICAgICAgICAgICAgTTYgMjBIMjRWMjIuNUg2WgogICAgICAgICAgICAgICBNNiAyNkgxOFYyOC41SDZaIi8+CiAgICA8L2c+CiAgICA8IS0tIHN0aWNreSBub3RlIDIgKHNtYWxsZXIsIHdpdGggZm9sZGVkIGNvcm5lciArIGxpbmVzKSAtLT4KICAgIDxnIHRyYW5zZm9ybT0idHJhbnNsYXRlKDE1MCw1NCkgcm90YXRlKDkpIHNjYWxlKDAuNzIpIj4KICAgICAgPHBhdGggZD0iTTIgMkgyNEwzMiAxMFYzMlEzMiAzNCAzMCAzNEgyUTAgMzQgMCAzMlY0UTAgMiAyIDJaCiAgICAgICAgICAgICAgIE02IDE0SDI0VjE2LjVINloKICAgICAgICAgICAgICAgTTYgMjBIMjRWMjIuNUg2WgogICAgICAgICAgICAgICBNNiAyNkgxOFYyOC41SDZaIi8+CiAgICA8L2c+CiAgICA8IS0tIHJlY2VpcHQgLyBub3RlIHN0cmlwIHdpdGggdG9ybiBib3R0b20gZWRnZSAtLT4KICAgIDxnIHRyYW5zZm9ybT0idHJhbnNsYXRlKDE3NiwxMzgpIHJvdGF0ZSgxNykiPgogICAgICA8cGF0aCBkPSJNMCAwSDI2VjIyTDIzIDI2TDIwIDIyTDE3IDI2TDE0IDIyTDExIDI2TDggMjJMNSAyNkwyIDIyTDAgMjZaCiAgICAgICAgICAgICAgIE00IDZIMjJWOC40SDRaCiAgICAgICAgICAgICAgIE00IDExSDIyVjEzLjRINFoKICAgICAgICAgICAgICAgTTQgMTZIMTZWMTguNEg0WiIvPgogICAgPC9nPgogICAgPCEtLSBzbWFsbCBub3RlIDMgLS0+CiAgICA8ZyB0cmFuc2Zvcm09InRyYW5zbGF0ZSgxMTIsMTkwKSByb3RhdGUoNikgc2NhbGUoMC42KSI+CiAgICAgIDxwYXRoIGQ9Ik0yIDJIMjRMMzIgMTBWMzJRMzIgMzQgMzAgMzRIMlEwIDM0IDAgMzJWNFEwIDIgMiAyWgogICAgICAgICAgICAgICBNNiAxNEgyNFYxNi41SDZaCiAgICAgICAgICAgICAgIE02IDIwSDI0VjIyLjVINloiLz4KICAgIDwvZz4KICA8L2c+CiAgPCEtLSBwYXBlcmNsaXAgLS0+CiAgPGcgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoNTYsMTY0KSByb3RhdGUoLTIwKSIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMDAwMDAwIiBzdHJva2Utd2lkdGg9IjIuNiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj4KICAgIDxwYXRoIGQ9Ik00IDRDNCAxLjggNS44IDAgOCAwUzEyIDEuOCAxMiA0VjIwQzEyIDIzLjMgOS4zIDI2IDYgMjZTMCAyMy4zIDAgMjBWOEMwIDYuOSAwLjkgNiAyIDZTNCA2LjkgNCA4VjE5Ii8+CiAgPC9nPgo8L3N2Zz4=");
+  -webkit-mask-repeat: repeat;
+  mask-repeat: repeat;
+  -webkit-mask-size: 340px 340px;
+  mask-size: 340px 340px;
+  pointer-events: none;
+  z-index: -1;
+  transition: background-color 0.2s ease;
 }
 
 .font-ledger {
@@ -200,6 +220,55 @@ body {
   .animate-slide-right,
   .animate-stamp,
   .stamp-ring {
+    animation: none !important;
+  }
+}
+
+/* ===== Login modern-minimalis ===== */
+
+@keyframes riseIn {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes floatBlob {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(-12px, 16px) scale(1.04);
+  }
+}
+
+.animate-rise {
+  animation: riseIn 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.animate-blob {
+  animation: floatBlob 11s ease-in-out infinite;
+}
+
+.field-pill {
+  background: var(--card);
+  border-radius: 14px;
+  padding: 8px 14px;
+  border: 1.5px solid transparent;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.field-pill:focus-within {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--gold) 18%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-rise,
+  .animate-blob {
     animation: none !important;
   }
 }
