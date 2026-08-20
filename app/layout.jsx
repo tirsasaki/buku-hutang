@@ -36,8 +36,27 @@ export default function RootLayout({ children }) {
       </head>
       <body>
         {children}
-        <footer className="text-center text-[11.5px] text-[var(--ink-soft)] py-4 opacity-70">
-          Dibuat oleh Tirsasaki &copy; 2026
+        <footer className="mt-6">
+          <div className="max-w-md mx-auto px-6">
+            <div className="h-px" style={{ background: "var(--paper-line)" }} />
+          </div>
+          <div className="flex items-center justify-center gap-2.5 flex-wrap px-4 py-5 text-center">
+            <div
+              className="w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-semibold tracking-tight shrink-0"
+              style={{ border: "1px solid var(--gold)", color: "var(--gold)" }}
+            >
+              TS
+            </div>
+            <span className="text-[11.5px] text-[var(--ink-soft)]">
+              Dibuat oleh <span className="font-medium text-[var(--ink)]">tirsasaki</span>
+            </span>
+            <span className="text-[10px]" style={{ color: "var(--paper-line)" }}>
+              &#9679;
+            </span>
+            <span className="font-mono-num text-[11px] text-[var(--ink-soft)]">
+              &copy; {new Date().getFullYear()}
+            </span>
+          </div>
         </footer>
         <Analytics />
         <RegisterSW />
