@@ -5,16 +5,25 @@ import { useRouter } from "next/navigation";
 import { supabase } from "../lib/supabaseClient";
 import ThemeSwitcher from "./ThemeSwitcher";
 import useLedgerData from "./hooks/useLedgerData";
+import useDebtForm from "./hooks/useDebtForm";
+import usePayment from "./hooks/usePayment";
+import useReceipt from "./hooks/useReceipt";
 import EditPhoneModal from "./components/EditPhoneModal";
 import SignOutModal from "./components/SignOutModal";
 import AddCustomerModal from "./components/AddCustomerModal";
 import AddDebtModal from "./components/AddDebtModal";
 import CustomerPickerModal from "./components/CustomerPickerModal";
+import ReceiptStrip from "./components/ReceiptStrip";
+import PayModal from "./components/PayModal";
+import UseCreditModal from "./components/UseCreditModal";
+import TransactionDetailModal from "./components/TransactionDetailModal";
 import {
+  balanceForCustomer,
   customerColor,
   customerInitials,
+  creditBalanceForCustomer,
   formatRupiah,
-  normalizePhone,
+  lastActivityFor,
   paidAmountOf,
   remainingOf,
 } from "../lib/ledgerUtils";
@@ -39,38 +48,7 @@ export default function HomePage() {
   const [custPhone, setCustPhone] = useState("");
   const [custNameError, setCustNameError] = useState(false);
 
-  const [showAddDebt, setShowAddDebt] = useState(false);
-  const [debtItemName, setDebtItemName] = useState("");
-  const [debtQty, setDebtQty] = useState(1);
-  const [debtUnitPrice, setDebtUnitPrice] = useState("");
-  const [debtAmount, setDebtAmount] = useState("");
-  const [debtDate, setDebtDate] = useState("");
-  const [debtKasir, setDebtKasir] = useState("");
-  const [debtAmountError, setDebtAmountError] = useState(false);
-
-  const [bulkCustomerId, setBulkCustomerId] = useState("");
-  const [bulkDate, setBulkDate] = useState(() => new Date().toISOString().split("T")[0]);
-  const [bulkKasir, setBulkKasir] = useState("");
-  const [bulkItems, setBulkItems] = useState([{ item: "", qty: 1, amount: "", unitPrice: "" }]);
-  const [bulkCustomerError, setBulkCustomerError] = useState(false);
-  const [bulkItemErrors, setBulkItemErrors] = useState({});
-  const [showCustomerPicker, setShowCustomerPicker] = useState(false);
-  const [customerPickerSearch, setCustomerPickerSearch] = useState("");
-
   const [detailGroupKey, setDetailGroupKey] = useState(null);
-
-  const [payTarget, setPayTarget] = useState(null);
-  const [payMode, setPayMode] = useState("partial");
-  const [payAmount, setPayAmount] = useState("");
-  const [receiver, setReceiver] = useState("");
-  const [receiverOther, setReceiverOther] = useState("");
-  const [payAmountError, setPayAmountError] = useState(false);
-  const [receiverError, setReceiverError] = useState(false);
-
-  const [showUseCredit, setShowUseCredit] = useState(false);
-  const [useCreditReceiver, setUseCreditReceiver] = useState("");
-  const [useCreditReceiverOther, setUseCreditReceiverOther] = useState("");
-  const [useCreditReceiverError, setUseCreditReceiverError] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -84,6 +62,83 @@ export default function HomePage() {
   }, [router]);
 
   const { loading, customers, debtItems, creditTx, fetchAll } = useLedgerData({ checkingAuth, userId });
+  const {
+    showAddDebt,
+    setShowAddDebt,
+    debtItemName,
+    setDebtItemName,
+    debtQty,
+    setDebtQty,
+    debtUnitPrice,
+    setDebtUnitPrice,
+    debtAmount,
+    setDebtAmount,
+    debtDate,
+    setDebtDate,
+    debtKasir,
+    setDebtKasir,
+    debtAmountError,
+    setDebtAmountError,
+    bulkCustomerId,
+    setBulkCustomerId,
+    bulkDate,
+    setBulkDate,
+    bulkKasir,
+    setBulkKasir,
+    bulkItems,
+    setBulkItems,
+    bulkCustomerError,
+    setBulkCustomerError,
+    bulkItemErrors,
+    setBulkItemErrors,
+    showCustomerPicker,
+    setShowCustomerPicker,
+    customerPickerSearch,
+    setCustomerPickerSearch,
+    handleAddDebt,
+    handleDebtQtyChange,
+    handleDebtUnitPriceChange,
+    handleDebtAmountChange,
+    resetKasirForm,
+    hasKasirData,
+    handleClearKasirForm,
+    addBulkRow,
+    removeBulkRow,
+    updateBulkRow,
+    handleAddDebtBulk,
+  } = useDebtForm({ selectedCustomerId, fetchAll, getNextInvoiceNo });
+  const {
+    payTarget,
+    setPayTarget,
+    payMode,
+    setPayMode,
+    payAmount,
+    setPayAmount,
+    receiver,
+    setReceiver,
+    receiverOther,
+    setReceiverOther,
+    payAmountError,
+    setPayAmountError,
+    receiverError,
+    setReceiverError,
+    showUseCredit,
+    setShowUseCredit,
+    useCreditReceiver,
+    setUseCreditReceiver,
+    useCreditReceiverOther,
+    setUseCreditReceiverOther,
+    useCreditReceiverError,
+    setUseCreditReceiverError,
+    openPayModal,
+    openBulkLunasModal,
+    openGroupLunasModal,
+    handleConfirmPay,
+    openUseCreditModal,
+    handleConfirmUseCredit,
+    deleteDebtItem,
+  } = usePayment({ debtItems, creditTx, selectedCustomerId, fetchAll, setDetailGroupKey });
+  const { buildReceiptBody, buildWaMessage, handleShareWa, handleShare, handleCopyText } = useReceipt({ debtItems });
 
   async function handleSignOut() {
     setShowSignOutConfirm(false);
@@ -116,20 +171,6 @@ export default function HomePage() {
     return data;
   }
 
-  function balanceForCustomer(custId) {
-    return debtItems
-      .filter((i) => i.customer_id === custId)
-      .reduce((s, i) => s + Math.max(remainingOf(i), 0), 0);
-  }
-  function lastActivityFor(custId) {
-    const items = debtItems.filter((i) => i.customer_id === custId);
-    if (items.length === 0) return null;
-    return items.reduce((a, b) => (new Date(a.date) > new Date(b.date) ? a : b)).date;
-  }
-  function creditBalanceForCustomer(custId) {
-    return creditTx.filter((c) => c.customer_id === custId).reduce((s, c) => s + Number(c.amount), 0);
-  }
-
   async function handleAddCustomer(e) {
     e.preventDefault();
     if (!custName.trim()) {
@@ -141,368 +182,6 @@ export default function HomePage() {
     setCustName("");
     setCustPhone("");
     setShowAddCust(false);
-    fetchAll();
-  }
-
-  async function handleAddDebt(e) {
-    e.preventDefault();
-    const amount = parseFloat(debtAmount);
-    if (!amount || amount <= 0 || isNaN(amount)) {
-      setDebtAmountError(true);
-      return;
-    }
-    setDebtAmountError(false);
-    const dateVal = debtDate || new Date().toISOString().split("T")[0];
-    const invoiceNo = await getNextInvoiceNo(dateVal);
-    await supabase.from("debt_items").insert({
-      customer_id: selectedCustomerId,
-      item: debtItemName.trim(),
-      qty: parseInt(debtQty) || 1,
-      amount: amount,
-      date: dateVal,
-      kasir: debtKasir.trim() || null,
-      invoice_no: invoiceNo,
-    });
-    setDebtItemName("");
-    setDebtQty(1);
-    setDebtUnitPrice("");
-    setDebtAmount("");
-    setDebtKasir("");
-    setShowAddDebt(false);
-    fetchAll(); 
-  }
-
-  // Sinkronisasi qty, harga per item, & total harga untuk form "Tambah hutang baru"
-  // (logika sama dengan form kasir): qty = 1 -> harga per item nonaktif; qty >= 2 -> aktif & total otomatis.
-  function handleDebtQtyChange(value) {
-    const q = parseInt(value) || 1;
-    setDebtQty(value);
-    if (q <= 1) {
-      setDebtUnitPrice(debtAmount);
-    } else {
-      const unit = parseFloat(debtUnitPrice) || 0;
-      if (unit) setDebtAmount(String(unit * q));
-    }
-  }
-
-  function handleDebtUnitPriceChange(value) {
-    setDebtUnitPrice(value);
-    const q = parseInt(debtQty) || 1;
-    const unit = parseFloat(value) || 0;
-    setDebtAmount(value === "" ? "" : String(unit * q));
-  }
-
-  function handleDebtAmountChange(value) {
-    setDebtAmount(value);
-    const q = parseInt(debtQty) || 1;
-    if (q <= 1) setDebtUnitPrice(value);
-  }
-
-  function resetKasirForm() {
-    setBulkCustomerId("");
-    setBulkDate(new Date().toISOString().split("T")[0]);
-    setBulkKasir("");
-    setBulkItems([{ item: "", qty: 1, amount: "", unitPrice: "" }]);
-    setBulkCustomerError(false);
-    setBulkItemErrors({});
-  }
-
-  function hasKasirData() {
-    return (
-      !!bulkCustomerId ||
-      !!bulkKasir.trim() ||
-      bulkItems.some((r) => r.item.trim() || r.amount !== "" || Number(r.qty) !== 1)
-    );
-  }
-
-  function handleClearKasirForm() {
-    if (hasKasirData() && !confirm("Bersihkan seluruh isian transaksi ini?")) return;
-    resetKasirForm();
-  }
-
-  function addBulkRow() {
-    setBulkItems((rows) => [...rows, { item: "", qty: 1, amount: "", unitPrice: "" }]);
-  }
-
-  function removeBulkRow(idx) {
-    setBulkItems((rows) => rows.filter((_, i) => i !== idx));
-  }
-
-  // Sinkronisasi antar qty, harga per item, & total harga:
-  // - qty = 1  -> "harga per item" nonaktif, mengikuti "total harga" (1:1)
-  // - qty >= 2 -> "harga per item" aktif, "total harga" dihitung otomatis (qty x harga per item)
-  function updateBulkRow(idx, field, value) {
-    setBulkItems((rows) =>
-      rows.map((r, i) => {
-        if (i !== idx) return r;
-        const row = { ...r, [field]: value };
-
-        if (field === "qty") {
-          const q = parseInt(value) || 1;
-          if (q <= 1) {
-            row.unitPrice = row.amount;
-          } else {
-            const unit = parseFloat(row.unitPrice) || 0;
-            row.amount = unit ? String(unit * q) : row.amount;
-          }
-        } else if (field === "unitPrice") {
-          const q = parseInt(row.qty) || 1;
-          const unit = parseFloat(value) || 0;
-          row.amount = value === "" ? "" : String(unit * q);
-        } else if (field === "amount") {
-          const q = parseInt(row.qty) || 1;
-          if (q <= 1) {
-            row.unitPrice = value;
-          }
-        }
-
-        return row;
-      })
-    );
-  }
-
-  async function handleAddDebtBulk(e) {
-    e.preventDefault();
-    let hasError = false;
-
-    if (!bulkCustomerId) {
-      setBulkCustomerError(true);
-      hasError = true;
-    } else {
-      setBulkCustomerError(false);
-    }
-
-    const errors = {};
-    bulkItems.forEach((row, idx) => {
-      const amt = parseFloat(row.amount);
-      if (!amt || amt <= 0 || isNaN(amt)) {
-        errors[idx] = true;
-        hasError = true;
-      }
-    });
-    setBulkItemErrors(errors);
-    if (hasError) return;
-
-    const dateVal = bulkDate || new Date().toISOString().split("T")[0];
-    const kasirVal = bulkKasir.trim() || null;
-    const invoiceNo = await getNextInvoiceNo(dateVal);
-    const rows = bulkItems.map((row) => ({
-      customer_id: bulkCustomerId,
-      item: row.item.trim(),
-      qty: parseInt(row.qty) || 1,
-      amount: parseFloat(row.amount),
-      date: dateVal,
-      kasir: kasirVal,
-      invoice_no: invoiceNo,
-    }));
-
-    await supabase.from("debt_items").insert(rows);
-    resetKasirForm();
-    fetchAll();
-  }
-
-  function openPayModal(item, mode) {
-    setPayTarget(item);
-    setPayMode(mode);
-    setPayAmount(mode === "lunas" ? String(Math.round(remainingOf(item))) : "");
-    setReceiver("");
-    setReceiverOther("");
-    setPayAmountError(false);
-    setReceiverError(false);
-  }
-
-  function openBulkLunasModal() {
-    const items = debtItems.filter((i) => i.customer_id === selectedCustomerId && remainingOf(i) > 0);
-    if (items.length === 0) {
-      alert("Pelanggan ini tidak memiliki hutang aktif.");
-      return;
-    }
-    const total = items.reduce((s, i) => s + remainingOf(i), 0);
-    setPayTarget("ALL");
-    setPayMode("lunas");
-    setPayAmount(String(Math.round(total)));
-    setReceiver("");
-    setReceiverOther("");
-    setPayAmountError(false);
-    setReceiverError(false);
-  }
-
-  function openGroupLunasModal(items) {
-    const activeItems = items.filter((i) => remainingOf(i) > 0);
-    if (activeItems.length === 0) {
-      alert("Transaksi ini sudah lunas semua.");
-      return;
-    }
-    const total = activeItems.reduce((s, i) => s + remainingOf(i), 0);
-    setPayTarget(activeItems);
-    setPayMode("lunas");
-    setPayAmount(String(Math.round(total)));
-    setReceiver("");
-    setReceiverOther("");
-    setPayAmountError(false);
-    setReceiverError(false);
-  }
-
-  async function handleConfirmPay(e) {
-    e.preventDefault();
-    if (!payTarget) return;
-    const finalReceiver = receiverOther.trim() || receiver;
-
-    if (!finalReceiver) {
-      setReceiverError(true);
-      return;
-    }
-    setReceiverError(false);
-
-    if (payTarget === "ALL" || Array.isArray(payTarget)) {
-      const items =
-        payTarget === "ALL"
-          ? debtItems.filter((i) => i.customer_id === selectedCustomerId && remainingOf(i) > 0)
-          : payTarget.filter((i) => remainingOf(i) > 0);
-      const totalRemaining = items.reduce((s, i) => s + remainingOf(i), 0);
-
-      const amount = parseFloat(payAmount);
-      if (!amount || amount <= 0 || isNaN(amount) || amount < totalRemaining) {
-        setPayAmountError(true);
-        return;
-      }
-      setPayAmountError(false);
-
-      const rows = items.map((it) => ({
-        debt_item_id: it.id,
-        amount: remainingOf(it),
-        received_by: finalReceiver,
-      }));
-      await supabase.from("payments").insert(rows);
-
-      const overpay = amount - totalRemaining;
-      if (overpay > 0) {
-        await supabase.from("credit_transactions").insert({
-          customer_id: selectedCustomerId,
-          amount: overpay,
-          note: "Kelebihan bayar - tandai lunas",
-        });
-      }
-
-      setPayTarget(null);
-      setDetailGroupKey(null);
-      fetchAll();
-
-      if (overpay > 0) {
-        alert(
-          `Uang diterima melebihi total tagihan sebesar ${formatRupiah(overpay)}. Kelebihannya sudah disimpan sebagai saldo lebih pelanggan ini, dan bisa dipakai untuk pembayaran berikutnya.`
-        );
-      }
-      return;
-    }
-
-    const remaining = remainingOf(payTarget);
-    let amount;
-    let valid = true;
-
-    amount = parseFloat(payAmount);
-    if (!amount || amount <= 0 || isNaN(amount)) {
-      setPayAmountError(true);
-      valid = false;
-    } else if (payMode === "lunas" && amount < remaining) {
-      // Mode "lunas" wajib menutup penuh sisa hutang; kalau kurang dari itu,
-      // pakai tombol "Bayar sebagian" saja.
-      setPayAmountError(true);
-      valid = false;
-    } else {
-      setPayAmountError(false);
-    }
-    if (!valid) return;
-
-    const actualPayment = Math.min(amount, remaining);
-    const overpay = Math.max(amount - remaining, 0);
-
-    await supabase.from("payments").insert({
-      debt_item_id: payTarget.id,
-      amount: actualPayment,
-      received_by: finalReceiver,
-    });
-
-    if (overpay > 0) {
-      await supabase.from("credit_transactions").insert({
-        customer_id: selectedCustomerId,
-        amount: overpay,
-        note: `Kelebihan bayar${payTarget.item ? " - " + payTarget.item : ""}`,
-      });
-    }
-
-    setPayTarget(null);
-    fetchAll();
-
-    if (overpay > 0) {
-      alert(
-        `Pembayaran melebihi sisa hutang sebesar ${formatRupiah(overpay)}. Kelebihannya sudah disimpan sebagai saldo lebih pelanggan ini, dan bisa dipakai untuk pembayaran berikutnya.`
-      );
-    }
-  }
-
-  // Pakai saldo lebih pelanggan untuk membayar hutang yang masih berjalan,
-  // dimulai dari yang paling lama, sampai saldo habis atau hutang lunas semua.
-  function openUseCreditModal() {
-    const available = creditBalanceForCustomer(selectedCustomerId);
-    if (available <= 0) {
-      alert("Pelanggan ini tidak memiliki saldo lebih.");
-      return;
-    }
-    const items = debtItems.filter((i) => i.customer_id === selectedCustomerId && remainingOf(i) > 0);
-    if (items.length === 0) {
-      alert("Pelanggan ini tidak memiliki hutang aktif untuk dibayar pakai saldo.");
-      return;
-    }
-    setUseCreditReceiver("");
-    setUseCreditReceiverOther("");
-    setUseCreditReceiverError(false);
-    setShowUseCredit(true);
-  }
-
-  async function handleConfirmUseCredit(e) {
-    e.preventDefault();
-    const finalReceiver = useCreditReceiverOther.trim() || useCreditReceiver;
-    if (!finalReceiver) {
-      setUseCreditReceiverError(true);
-      return;
-    }
-    setUseCreditReceiverError(false);
-
-    let available = creditBalanceForCustomer(selectedCustomerId);
-    const items = debtItems
-      .filter((i) => i.customer_id === selectedCustomerId && remainingOf(i) > 0)
-      .sort((a, b) => new Date(a.date) - new Date(b.date));
-
-    const paymentRows = [];
-    let totalUsed = 0;
-    for (const it of items) {
-      if (available <= 0) break;
-      const rem = remainingOf(it);
-      const use = Math.min(available, rem);
-      if (use > 0) {
-        paymentRows.push({ debt_item_id: it.id, amount: use, received_by: finalReceiver });
-        available -= use;
-        totalUsed += use;
-      }
-    }
-
-    if (totalUsed > 0) {
-      await supabase.from("payments").insert(paymentRows);
-      await supabase.from("credit_transactions").insert({
-        customer_id: selectedCustomerId,
-        amount: -totalUsed,
-        note: "Dipakai untuk membayar hutang",
-      });
-    }
-
-    setShowUseCredit(false);
-    fetchAll();
-  }
-
-  async function deleteDebtItem(itemId) {
-    if (!confirm("Hapus catatan hutang ini beserta riwayat pembayarannya?")) return;
-    await supabase.from("debt_items").delete().eq("id", itemId);
     fetchAll();
   }
 
@@ -530,126 +209,6 @@ export default function HomePage() {
     fetchAll();
   }
 
-  // Format struk kasir klasik: kode singkat & rata kolom ala mesin kasir,
-  // bukan kalimat panjang. Dibungkus ``` agar WhatsApp merendernya sebagai
-  // font monospace (tampilan seperti struk cetak asli). Semua produk yang
-  // belum dibayar tetap ditampilkan, tapi nomor invoice yang dicantumkan
-  // cukup 1 saja (yang paling lama) supaya tidak membingungkan.
-  // buildReceiptBody menghasilkan teks struk polos (tanpa pembungkus khusus
-  // WhatsApp) sehingga bisa dipakai ulang untuk Web Share API, salin teks,
-  // maupun format lain di luar WhatsApp.
-  function buildReceiptBody(cust) {
-    const unpaidItems = debtItems
-      .filter((i) => i.customer_id === cust.id && remainingOf(i) > 0)
-      .slice()
-      .sort((a, b) => new Date(a.date) - new Date(b.date));
-    if (unpaidItems.length === 0) return null;
-
-    const WIDTH = 28;
-    const divider = "-".repeat(WIDTH);
-    const doubleLine = "=".repeat(WIDTH);
-    const padRight = (label, value) => {
-      const gap = Math.max(WIDTH - label.length - value.length, 1);
-      return label + " ".repeat(gap) + value;
-    };
-
-    const oldestInvoiceNo = unpaidItems[0].invoice_no || "-";
-    const todayStr = new Date().toLocaleDateString("id-ID", { day: "2-digit", month: "2-digit", year: "2-digit" });
-
-    const itemLines = unpaidItems.map((it) => {
-      const qty = it.qty || 1;
-      const rem = remainingOf(it);
-      const unitPrice = Math.round(rem / qty);
-      const name = (it.item || "Barang").toUpperCase();
-      const qtyPriceStr = "  " + qty + " x " + unitPrice.toLocaleString("id-ID");
-      const totalStr = rem.toLocaleString("id-ID");
-      return name + "\n" + padRight(qtyPriceStr, totalStr);
-    });
-
-    const total = unpaidItems.reduce((s, it) => s + remainingOf(it), 0);
-
-    return (
-      "STRUK TAGIHAN\n" +
-      doubleLine + "\n" +
-      "INV  : " + oldestInvoiceNo + "\n" +
-      "NAMA : " + (cust.name || "-") + "\n" +
-      "TGL  : " + todayStr + "\n" +
-      divider + "\n" +
-      itemLines.join("\n") + "\n" +
-      divider + "\n" +
-      padRight("TOTAL", formatRupiah(total)) + "\n" +
-      "STATUS: BELUM LUNAS\n" +
-      doubleLine
-    );
-  }
-
-  // Dibungkus ``` agar WhatsApp merendernya sebagai font monospace (tampilan
-  // seperti struk cetak asli). Khusus dipakai untuk link wa.me karena hanya
-  // WhatsApp yang mendukung format ini.
-  function buildWaMessage(cust) {
-    const body = buildReceiptBody(cust);
-    if (!body) return null;
-    return "```\n" + body + "\n```";
-  }
-
-  function handleShareWa(cust) {
-    const message = buildWaMessage(cust);
-    if (!message) {
-      alert("Pelanggan ini tidak memiliki hutang aktif untuk dibagikan.");
-      return;
-    }
-    const encoded = encodeURIComponent(message);
-    const url =
-      cust.phone && cust.phone.trim()
-        ? "https://wa.me/" + normalizePhone(cust.phone) + "?text=" + encoded
-        : "https://api.whatsapp.com/send?text=" + encoded;
-    window.open(url, "_blank");
-  }
-
-  // handleShare membuka menu share bawaan HP (Web Share API) sehingga
-  // pengguna bisa memilih WhatsApp, Instagram, Telegram, SMS, Email, atau
-  // aplikasi lain yang terpasang. Kalau browser tidak mendukung (mis. di
-  // desktop), otomatis fallback ke link WhatsApp seperti sebelumnya.
-  async function handleShare(cust) {
-    const body = buildReceiptBody(cust);
-    if (!body) {
-      alert("Pelanggan ini tidak memiliki hutang aktif untuk dibagikan.");
-      return;
-    }
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: "Struk Tagihan - " + (cust.name || ""),
-          text: body,
-        });
-      } catch (err) {
-        // AbortError = pengguna membatalkan share, tidak perlu fallback
-        if (err && err.name !== "AbortError") {
-          handleShareWa(cust);
-        }
-      }
-    } else {
-      // Browser tanpa dukungan Web Share API (umumnya desktop)
-      handleShareWa(cust);
-    }
-  }
-
-  // handleCopyText menyalin teks struk ke clipboard, berguna untuk ditempel
-  // manual ke aplikasi apa pun (medsos, catatan, email, dll).
-  async function handleCopyText(cust) {
-    const body = buildReceiptBody(cust);
-    if (!body) {
-      alert("Pelanggan ini tidak memiliki hutang aktif untuk dibagikan.");
-      return;
-    }
-    try {
-      await navigator.clipboard.writeText(body);
-      alert("Teks tagihan berhasil disalin.");
-    } catch (err) {
-      alert("Gagal menyalin teks. Coba lagi.");
-    }
-  }
-
   if (checkingAuth || loading) {
     return <div className="min-h-screen flex items-center justify-center text-sm text-[var(--ink-soft)]">Memuat...</div>;
   }
@@ -658,11 +217,11 @@ export default function HomePage() {
   const selectedBulkCustomer = customers.find((c) => c.id === bulkCustomerId);
   const customerPickerResults = customers
     .filter((c) => !customerPickerSearch || c.name.toLowerCase().includes(customerPickerSearch.toLowerCase()))
-    .map((c) => ({ ...c, balance: balanceForCustomer(c.id) }))
+    .map((c) => ({ ...c, balance: balanceForCustomer(c.id, debtItems) }))
     .sort((a, b) => a.name.localeCompare(b.name));
   const filteredCustomers = customers
     .filter((c) => !searchTerm || c.name.toLowerCase().includes(searchTerm.toLowerCase()))
-    .map((c) => ({ ...c, balance: balanceForCustomer(c.id), last: lastActivityFor(c.id) }))
+    .map((c) => ({ ...c, balance: balanceForCustomer(c.id, debtItems), last: lastActivityFor(c.id, debtItems) }))
     .filter((c) => {
       if (statusFilter === "belum") return c.balance > 0;
       if (statusFilter === "lunas") return c.balance <= 0;
@@ -689,8 +248,8 @@ export default function HomePage() {
       }
     });
 
-  const totalUnpaid = customers.reduce((s, c) => s + balanceForCustomer(c.id), 0);
-  const countUnpaid = customers.filter((c) => balanceForCustomer(c.id) > 0).length;
+  const totalUnpaid = customers.reduce((s, c) => s + balanceForCustomer(c.id, debtItems), 0);
+  const countUnpaid = customers.filter((c) => balanceForCustomer(c.id, debtItems) > 0).length;
   const totalCustomers = customers.length;
   const countLunas = totalCustomers - countUnpaid;
   const unpaidRatio = totalCustomers > 0 ? Math.round((countUnpaid / totalCustomers) * 100) : 0;
@@ -1260,7 +819,7 @@ export default function HomePage() {
                 )}
                 {filteredCustomers.map((c) => {
                   const isLunas = c.balance <= 0;
-                  const credit = creditBalanceForCustomer(c.id);
+                  const credit = creditBalanceForCustomer(c.id, creditTx);
                   const lastStr = c.last
                     ? new Date(c.last).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })
                     : null;
@@ -1366,7 +925,7 @@ export default function HomePage() {
             />
             <div
               className="absolute -bottom-16 -left-12 w-36 h-36 rounded-full opacity-[0.06] pointer-events-none blur-[2px]"
-              style={{ background: balanceForCustomer(selectedCustomer.id) <= 0 ? "var(--green)" : "var(--red)" }}
+              style={{ background: balanceForCustomer(selectedCustomer.id, debtItems) <= 0 ? "var(--green)" : "var(--red)" }}
             />
 
             <div className="relative">
@@ -1405,20 +964,20 @@ export default function HomePage() {
                 <div className="text-[11px] text-[var(--ink-soft)] uppercase tracking-[0.12em] font-medium">Total sisa hutang</div>
                 <div
                   className={`font-mono-num text-[34px] leading-tight font-bold mt-1 tabular-nums ${
-                    balanceForCustomer(selectedCustomer.id) <= 0 ? "text-[var(--green)]" : "text-[var(--red)]"
+                    balanceForCustomer(selectedCustomer.id, debtItems) <= 0 ? "text-[var(--green)]" : "text-[var(--red)]"
                   }`}
                 >
-                  {formatRupiah(balanceForCustomer(selectedCustomer.id))}
+                  {formatRupiah(balanceForCustomer(selectedCustomer.id, debtItems))}
                 </div>
               </div>
 
-              {creditBalanceForCustomer(selectedCustomer.id) > 0 && (
+              {creditBalanceForCustomer(selectedCustomer.id, creditTx) > 0 && (
                 <div className="inline-flex items-center gap-1.5 mt-3 px-3 py-1.5 rounded-full bg-[var(--gold-soft)] text-[var(--gold)] text-xs font-medium">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
                     <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2" />
                     <path d="M12 7v5l3 2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
-                  Saldo lebih: {formatRupiah(creditBalanceForCustomer(selectedCustomer.id))}
+                  Saldo lebih: {formatRupiah(creditBalanceForCustomer(selectedCustomer.id, creditTx))}
                 </div>
               )}
             </div>
@@ -1481,7 +1040,7 @@ export default function HomePage() {
                 Tandai semua lunas
               </button>
 
-              {creditBalanceForCustomer(selectedCustomer.id) > 0 && balanceForCustomer(selectedCustomer.id) > 0 && (
+              {creditBalanceForCustomer(selectedCustomer.id, creditTx) > 0 && balanceForCustomer(selectedCustomer.id, debtItems) > 0 && (
                 <button
                   onClick={openUseCreditModal}
                   className="w-full flex items-center justify-center gap-1.5 py-3 rounded-2xl bg-[var(--card)] border border-[var(--gold)]/40 text-[var(--gold)] text-sm font-medium shadow-sm hover:bg-[var(--gold-soft)] active:scale-[0.98] transition-all duration-200"
@@ -1628,46 +1187,14 @@ export default function HomePage() {
                 return groups.map((g) => {
                   const groupTotal = g.items.reduce((s, it) => s + Number(it.amount || 0), 0);
                   return (
-                    <div
+                    <ReceiptStrip
                       key={g.key}
-                      className="font-mono-num bg-[var(--card)] border border-dashed border-[var(--paper-line)] rounded-lg shadow-sm overflow-hidden"
-                    >
-                      {/* Kepala struk: nomor invoice, tanggal selesai & nama kasir */}
-                      <div className="px-3.5 pt-3.5 pb-2.5 text-center border-b border-dashed border-[var(--paper-line)]">
-                        <div className="text-[10px] tracking-[0.25em] text-[var(--ink-soft)] uppercase">Struk Pembayaran</div>
-                        <div className="text-xs font-semibold mt-1.5">{g.invoiceNo || "-"}</div>
-                        <div className="text-sm font-semibold mt-0.5">{g.lunasDateStr}</div>
-                        <div className="text-[11px] text-[var(--ink-soft)] mt-0.5">
-                          Kasir: {g.receivedBy || "-"}
-                        </div>
-                      </div>
-
-                      {/* Isi struk: nama produk x jumlah & harga */}
-                      <div className="px-3.5 py-2.5 space-y-1.5">
-                        {g.items.map((it) => (
-                          <div key={it.id} className="flex items-baseline justify-between gap-3">
-                            <span className="text-xs leading-relaxed">
-                              {it.item || "Hutang"} <span className="text-[var(--ink-soft)]">x{it.qty || 1}</span>
-                            </span>
-                            <span className="text-xs whitespace-nowrap">{formatRupiah(it.amount)}</span>
-                          </div>
-                        ))}
-                      </div>
-
-                      {/* Total struk */}
-                      <div className="px-3.5 py-2.5 border-t border-dashed border-[var(--paper-line)] flex items-baseline justify-between">
-                        <span className="text-xs font-semibold uppercase tracking-wide">Total</span>
-                        <span className="text-base font-bold text-[var(--green)] whitespace-nowrap">
-                          {formatRupiah(groupTotal)}
-                        </span>
-                      </div>
-
-                      <div className="px-3.5 pb-3 -mt-0.5 flex justify-center">
-                        <span className="inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[var(--green-soft)] text-[var(--green)]">
-                          Lunas
-                        </span>
-                      </div>
-                    </div>
+                      invoiceNo={g.invoiceNo}
+                      lunasDateStr={g.lunasDateStr}
+                      receivedBy={g.receivedBy}
+                      items={g.items}
+                      total={groupTotal}
+                    />
                   );
                 });
               })()}
@@ -1779,263 +1306,62 @@ export default function HomePage() {
 
       {/* Modal: Detail transaksi belanja (piutang) berjalan */}
       {detailGroup && (
-        <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50">
-          <div className="bg-[var(--card)] rounded-t-3xl sm:rounded-3xl w-full sm:max-w-sm max-h-[88vh] overflow-y-auto shadow-2xl">
-            <div className="sticky top-0 bg-[var(--card)] px-5 pt-5 pb-4 border-b border-[var(--paper-line)] flex items-start justify-between gap-3 z-10">
-              <div className="min-w-0">
-                <div className="text-[10px] font-semibold tracking-[0.2em] text-[var(--gold)] uppercase">Belanja (Piutang)</div>
-                <div className="font-ledger text-lg mt-0.5 font-mono-num">{detailGroup.trxNo}</div>
-                <div className="text-xs text-[var(--ink-soft)] mt-1">
-                  {new Date(detailGroup.date).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}
-                  {" · "}Kasir: {detailGroup.kasir || "-"}
-                </div>
-              </div>
-              <div
-                onClick={() => setDetailGroupKey(null)}
-                className="w-8 h-8 rounded-full bg-[var(--paper-line)] flex items-center justify-center shrink-0 cursor-pointer"
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-                  <line x1="5" y1="5" x2="19" y2="19" stroke="var(--ink-soft)" strokeWidth="2" strokeLinecap="round" />
-                  <line x1="19" y1="5" x2="5" y2="19" stroke="var(--ink-soft)" strokeWidth="2" strokeLinecap="round" />
-                </svg>
-              </div>
-            </div>
-
-            <div className="px-5 py-4 space-y-3">
-              {detailGroup.items.map((it) => {
-                const paid = paidAmountOf(it);
-                const remaining = remainingOf(it);
-                const pct = it.amount > 0 ? Math.min(100, Math.round((paid / it.amount) * 100)) : 100;
-                const sortedPayments = (it.payments || []).slice().sort((a, b) => new Date(b.paid_at) - new Date(a.paid_at));
-                return (
-                  <div key={it.id} className="rounded-2xl border border-[var(--paper-line)] p-3.5">
-                    <div className="flex items-baseline justify-between gap-2">
-                      <span className="text-sm font-semibold">{it.item || "Hutang"}</span>
-                      <span className="text-xs text-[var(--ink-soft)] whitespace-nowrap">{it.qty || 1} pcs</span>
-                    </div>
-                    <div className="text-xs text-[var(--ink-soft)] mt-1">Total: {formatRupiah(it.amount)}</div>
-                    <div className="h-1.5 rounded-full bg-[var(--red-soft)] mt-2 overflow-hidden">
-                      <div className="h-full rounded-full bg-[var(--green)]" style={{ width: pct + "%" }} />
-                    </div>
-                    <div className="flex justify-between items-baseline mt-2">
-                      <span className="text-xs text-[var(--ink-soft)]">Sisa</span>
-                      <span className="font-mono-num text-base font-semibold text-[var(--red)]">
-                        {formatRupiah(Math.max(remaining, 0))}
-                      </span>
-                    </div>
-                    {paid > 0 && (
-                      <div className="text-xs text-[var(--green)] mt-1">Sudah dibayar sebagian {formatRupiah(paid)}</div>
-                    )}
-                    <div className="flex gap-2 mt-2.5">
-                      <button onClick={() => openPayModal(it, "partial")} className="flex-1 py-1.5 rounded-lg border border-[var(--paper-line)] text-xs font-medium">
-                        Bayar sebagian
-                      </button>
-                      <button onClick={() => openPayModal(it, "lunas")} className="flex-1 py-1.5 rounded-lg bg-[var(--green)] text-white text-xs font-medium">
-                        Tandai lunas
-                      </button>
-                    </div>
-                    {sortedPayments.length > 0 && (
-                      <div className="mt-2 pt-2 border-t border-dashed border-[var(--paper-line)]">
-                        <div className="text-[11px] text-[var(--ink-soft)] uppercase tracking-wide mb-1">Riwayat bayar sebagian</div>
-                        {sortedPayments.map((p) => (
-                          <div key={p.id} className="text-[11.5px] text-[var(--ink-soft)] mt-0.5">
-                            {formatRupiah(p.amount)} &middot; diterima oleh {p.received_by} &middot; tanggal{" "}
-                            {new Date(p.paid_at).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                    <div onClick={() => deleteDebtItem(it.id)} className="text-[11px] text-[var(--ink-soft)] underline cursor-pointer mt-2 inline-block">
-                      Hapus barang ini
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            <div className="px-5 pb-5 pt-3 border-t border-[var(--paper-line)] sticky bottom-0 bg-[var(--card)]">
-              <div className="flex justify-between items-baseline mb-3">
-                <span className="text-xs text-[var(--ink-soft)] uppercase tracking-wide">Total transaksi</span>
-                <span className="font-mono-num text-xl font-bold">
-                  {formatRupiah(detailGroup.items.reduce((s, it) => s + Number(it.amount || 0), 0))}
-                </span>
-              </div>
-              <button
-                onClick={() => openGroupLunasModal(detailGroup.items)}
-                className="w-full py-2.5 rounded-xl bg-[var(--green)] text-white text-sm font-semibold"
-              >
-                Tandai transaksi ini lunas
-              </button>
-            </div>
-          </div>
-        </div>
+        <TransactionDetailModal
+          detailGroup={detailGroup}
+          onClose={() => setDetailGroupKey(null)}
+          onPay={openPayModal}
+          onDelete={deleteDebtItem}
+          onMarkGroupPaid={openGroupLunasModal}
+        />
       )}
 
       {/* Modal: Bayar */}
       {payTarget && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-5 z-50">
-          <form onSubmit={handleConfirmPay} className="bg-[var(--card)] rounded-2xl p-5 w-full max-w-sm">
-            <h2 className="font-ledger text-lg mb-1">{payTarget === "ALL" || Array.isArray(payTarget) ? "Tandai lunas" : payMode === "lunas" ? "Tandai lunas" : "Bayar sebagian"}</h2>
-            <p className="text-xs text-[var(--ink-soft)] mb-3">
-              {payTarget === "ALL" || Array.isArray(payTarget) ? (
-                (() => {
-                  const items =
-                    payTarget === "ALL"
-                      ? debtItems.filter((i) => i.customer_id === selectedCustomerId && remainingOf(i) > 0)
-                      : payTarget.filter((i) => remainingOf(i) > 0);
-                  const total = items.reduce((s, i) => s + remainingOf(i), 0);
-                  return `${items.length} barang, total tagihan ${formatRupiah(total)}. Semua akan ditandai lunas penuh.`;
-                })()
-              ) : (
-                <>
-                  Sisa hutang {payTarget.item || ""}: {formatRupiah(remainingOf(payTarget))}
-                  {payMode === "lunas" ? " — akan ditandai lunas penuh." : ""}
-                </>
-              )}
-            </p>
-            {creditBalanceForCustomer(selectedCustomerId) > 0 && (
-              <div className="mb-3 px-3 py-2 rounded-lg bg-[var(--gold-soft)] text-xs text-[var(--gold)] border border-[var(--gold)]/30">
-                Pelanggan ini punya saldo lebih {formatRupiah(creditBalanceForCustomer(selectedCustomerId))}. Tutup form ini lalu tekan &ldquo;Pakai saldo lebih&rdquo; di halaman pelanggan untuk memakainya.
-              </div>
-            )}
-            {(() => {
-              const isGroup = payTarget === "ALL" || Array.isArray(payTarget);
-              const groupItems = isGroup
-                ? payTarget === "ALL"
-                  ? debtItems.filter((i) => i.customer_id === selectedCustomerId && remainingOf(i) > 0)
-                  : payTarget.filter((i) => remainingOf(i) > 0)
-                : null;
-              const minRequired = isGroup
-                ? groupItems.reduce((s, i) => s + remainingOf(i), 0)
-                : payMode === "lunas"
-                ? remainingOf(payTarget)
-                : 0;
-              const amt = parseFloat(payAmount);
-              const overpay = !isNaN(amt) && amt > minRequired ? amt - minRequired : 0;
-              return (
-                <div className="mb-3">
-                  <label className="block text-xs text-[var(--ink-soft)] mb-1 font-medium">
-                    {isGroup || payMode === "lunas" ? "Uang diterima (Rp)" : "Jumlah dibayar (Rp)"}
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={payAmount}
-                    onChange={(e) => setPayAmount(e.target.value)}
-                    className="w-full px-3 py-2 rounded-lg border border-[var(--paper-line)] bg-[var(--paper)] text-sm outline-none focus:border-[var(--gold)] transition-colors"
-                  />
-                  {payAmountError && (
-                    <div className="text-xs text-[var(--red)] mt-1">
-                      {isGroup || payMode === "lunas"
-                        ? `Untuk menandai lunas, jumlah minimal ${formatRupiah(minRequired)}. Untuk bayar kurang dari itu, gunakan "Bayar sebagian".`
-                        : "Masukkan jumlah pembayaran yang benar"}
-                    </div>
-                  )}
-                  {overpay > 0 && (
-                    <div className="text-xs text-[var(--gold)] mt-1">
-                      Kelebihan {formatRupiah(overpay)} akan disimpan sebagai saldo lebih.
-                    </div>
-                  )}
-                </div>
-              );
-            })()}
-            <div className="mb-4">
-              <label className="block text-xs text-[var(--ink-soft)] mb-1 font-medium">Siapa yang menerima uangnya?</label>
-              <div className="flex gap-2 flex-wrap mt-1">
-                {["Saya", "Fuji", "Ibu"].map((name) => (
-                  <div
-                    key={name}
-                    onClick={() => {
-                      setReceiver(name);
-                      setReceiverOther("");
-                    }}
-                    className={`px-3 py-1.5 rounded-full border text-xs cursor-pointer ${receiver === name ? "bg-[var(--gold)] border-[var(--gold)] text-white" : "border-[var(--paper-line)]"}`}
-                  >
-                    {name}
-                  </div>
-                ))}
-              </div>
-              <input
-                value={receiverOther}
-                onChange={(e) => {
-                  setReceiverOther(e.target.value);
-                  if (e.target.value.trim()) setReceiver("");
-                }}
-                placeholder="Atau ketik nama lain"
-                className="w-full px-3 py-2 rounded-lg border border-[var(--paper-line)] bg-[var(--paper)] text-sm mt-2 outline-none focus:border-[var(--gold)] transition-colors"
-              />
-              {receiverError && <div className="text-xs text-[var(--red)] mt-1">Pilih atau isi nama penerima</div>}
-            </div>
-            <div className="flex gap-2">
-              <button type="button" onClick={() => setPayTarget(null)} className="flex-1 py-2 rounded-lg border border-[var(--paper-line)] text-sm text-[var(--ink-soft)]">
-                Batal
-              </button>
-              <button type="submit" className="flex-1 py-2 rounded-lg bg-[var(--green)] text-white text-sm font-medium">
-                Simpan
-              </button>
-            </div>
-          </form>
-        </div>
+        <PayModal
+          payTarget={payTarget}
+          payMode={payMode}
+          debtItems={debtItems}
+          selectedCustomerId={selectedCustomerId}
+          creditTx={creditTx}
+          payAmount={payAmount}
+          payAmountError={payAmountError}
+          receiver={receiver}
+          receiverOther={receiverOther}
+          receiverError={receiverError}
+          onPayAmountChange={setPayAmount}
+          onReceiverChange={(name) => {
+            setReceiver(name);
+            setReceiverOther("");
+          }}
+          onReceiverOtherChange={(value) => {
+            setReceiverOther(value);
+            if (value.trim()) setReceiver("");
+          }}
+          onCancel={() => setPayTarget(null)}
+          onSubmit={handleConfirmPay}
+        />
       )}
 
       {/* Modal: Pakai saldo lebih untuk membayar hutang */}
       {showUseCredit && selectedCustomer && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-5 z-50">
-          <form onSubmit={handleConfirmUseCredit} className="bg-[var(--card)] rounded-2xl p-5 w-full max-w-sm">
-            <h2 className="font-ledger text-lg mb-1">Pakai saldo lebih</h2>
-            {(() => {
-              const available = creditBalanceForCustomer(selectedCustomer.id);
-              const items = debtItems
-                .filter((i) => i.customer_id === selectedCustomer.id && remainingOf(i) > 0)
-                .sort((a, b) => new Date(a.date) - new Date(b.date));
-              const totalDebt = items.reduce((s, i) => s + remainingOf(i), 0);
-              const willUse = Math.min(available, totalDebt);
-              const leftoverCredit = available - willUse;
-              return (
-                <p className="text-xs text-[var(--ink-soft)] mb-3">
-                  Saldo lebih tersedia: {formatRupiah(available)}. Akan dipakai {formatRupiah(willUse)} untuk
-                  melunasi hutang paling lama terlebih dahulu.
-                  {leftoverCredit > 0 && ` Sisa saldo setelahnya: ${formatRupiah(leftoverCredit)}.`}
-                </p>
-              );
-            })()}
-            <div className="mb-4">
-              <label className="block text-xs text-[var(--ink-soft)] mb-1 font-medium">Siapa yang memproses ini?</label>
-              <div className="flex gap-2 flex-wrap mt-1">
-                {["Saya", "Fuji", "Ibu"].map((name) => (
-                  <div
-                    key={name}
-                    onClick={() => {
-                      setUseCreditReceiver(name);
-                      setUseCreditReceiverOther("");
-                    }}
-                    className={`px-3 py-1.5 rounded-full border text-xs cursor-pointer ${useCreditReceiver === name ? "bg-[var(--gold)] border-[var(--gold)] text-white" : "border-[var(--paper-line)]"}`}
-                  >
-                    {name}
-                  </div>
-                ))}
-              </div>
-              <input
-                value={useCreditReceiverOther}
-                onChange={(e) => {
-                  setUseCreditReceiverOther(e.target.value);
-                  if (e.target.value.trim()) setUseCreditReceiver("");
-                }}
-                placeholder="Atau ketik nama lain"
-                className="w-full px-3 py-2 rounded-lg border border-[var(--paper-line)] bg-[var(--paper)] text-sm mt-2 outline-none focus:border-[var(--gold)] transition-colors"
-              />
-              {useCreditReceiverError && <div className="text-xs text-[var(--red)] mt-1">Pilih atau isi nama yang memproses</div>}
-            </div>
-            <div className="flex gap-2">
-              <button type="button" onClick={() => setShowUseCredit(false)} className="flex-1 py-2 rounded-lg border border-[var(--paper-line)] text-sm text-[var(--ink-soft)]">
-                Batal
-              </button>
-              <button type="submit" className="flex-1 py-2 rounded-lg bg-[var(--gold)] text-white text-sm font-medium">
-                Pakai Saldo
-              </button>
-            </div>
-          </form>
-        </div>
+        <UseCreditModal
+          selectedCustomer={selectedCustomer}
+          debtItems={debtItems}
+          creditTx={creditTx}
+          useCreditReceiver={useCreditReceiver}
+          useCreditReceiverOther={useCreditReceiverOther}
+          useCreditReceiverError={useCreditReceiverError}
+          onReceiverChange={(name) => {
+            setUseCreditReceiver(name);
+            setUseCreditReceiverOther("");
+          }}
+          onReceiverOtherChange={(value) => {
+            setUseCreditReceiverOther(value);
+            if (value.trim()) setUseCreditReceiver("");
+          }}
+          onCancel={() => setShowUseCredit(false)}
+          onSubmit={handleConfirmUseCredit}
+        />
       )}
     </div>
   );

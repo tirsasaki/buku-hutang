@@ -3,8 +3,8 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { supabase } from "../../lib/supabaseClient";
-import ThemeSwitcher from "../ThemeSwitcher";
+import { supabase } from "../../../lib/supabaseClient";
+import ThemeSwitcher from "../../ThemeSwitcher";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
