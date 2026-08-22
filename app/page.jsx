@@ -1,53 +1,28 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../lib/supabaseClient";
 import ThemeSwitcher from "./ThemeSwitcher";
-
-function formatRupiah(n) {
-  return "Rp " + Math.round(n || 0).toLocaleString("id-ID");
-}
-function remainingOf(item) {
-  const paid = (item.payments || []).reduce((s, p) => s + Number(p.amount), 0);
-  return Number(item.amount) - paid;
-}
-function paidAmountOf(item) {
-  return (item.payments || []).reduce((s, p) => s + Number(p.amount), 0);
-}
-function normalizePhone(phone) {
-  let digits = phone.replace(/[^0-9]/g, "");
-  if (digits.startsWith("0")) digits = "62" + digits.slice(1);
-  return digits;
-}
-
-// Menghasilkan warna khas yang konsisten untuk tiap nama pelanggan (hue tetap
-// sama selama nama tidak berubah), agar tetap kontras di tema terang maupun gelap.
-function customerColor(name) {
-  const str = (name || "?").trim();
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) {
-    hash = str.charCodeAt(i) + ((hash << 5) - hash);
-    hash = hash & hash;
-  }
-  const hue = Math.abs(hash) % 360;
-  return `hsl(${hue}, 62%, 45%)`;
-}
-function customerInitials(name) {
-  const parts = (name || "?").trim().split(/\s+/).filter(Boolean);
-  if (parts.length === 0) return "?";
-  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
-  return (parts[0][0] + parts[1][0]).toUpperCase();
-}
+import useLedgerData from "./hooks/useLedgerData";
+import EditPhoneModal from "./components/EditPhoneModal";
+import SignOutModal from "./components/SignOutModal";
+import AddCustomerModal from "./components/AddCustomerModal";
+import AddDebtModal from "./components/AddDebtModal";
+import CustomerPickerModal from "./components/CustomerPickerModal";
+import {
+  customerColor,
+  customerInitials,
+  formatRupiah,
+  normalizePhone,
+  paidAmountOf,
+  remainingOf,
+} from "../lib/ledgerUtils";
 
 export default function HomePage() {
   const router = useRouter();
   const [checkingAuth, setCheckingAuth] = useState(true);
   const [userId, setUserId] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [customers, setCustomers] = useState([]);
-  const [debtItems, setDebtItems] = useState([]);
-  const [creditTx, setCreditTx] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState("terbaru");
   const [statusFilter, setStatusFilter] = useState("semua");
@@ -108,38 +83,7 @@ export default function HomePage() {
     });
   }, [router]);
 
-  const fetchAll = useCallback(async () => {
-    const { data: custs } = await supabase.from("customers").select("*").order("name");
-    const { data: items } = await supabase
-      .from("debt_items")
-      .select("*, payments(*)")
-      .order("date", { ascending: false });
-    const { data: credits } = await supabase
-      .from("credit_transactions")
-      .select("*")
-      .order("created_at", { ascending: false });
-    setCustomers(custs || []);
-    setDebtItems(items || []);
-    setCreditTx(credits || []);
-    setLoading(false);
-  }, []);
-
-  useEffect(() => {
-    if (checkingAuth || !userId) return;
-    fetchAll();
-
-    const channel = supabase
-      .channel("realtime-ledger-" + userId)
-      .on("postgres_changes", { event: "*", schema: "public", table: "customers", filter: `user_id=eq.${userId}` }, fetchAll)
-      .on("postgres_changes", { event: "*", schema: "public", table: "debt_items", filter: `user_id=eq.${userId}` }, fetchAll)
-      .on("postgres_changes", { event: "*", schema: "public", table: "payments", filter: `user_id=eq.${userId}` }, fetchAll)
-      .on("postgres_changes", { event: "*", schema: "public", table: "credit_transactions", filter: `user_id=eq.${userId}` }, fetchAll)
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [checkingAuth, userId, fetchAll]);
+  const { loading, customers, debtItems, creditTx, fetchAll } = useLedgerData({ checkingAuth, userId });
 
   async function handleSignOut() {
     setShowSignOutConfirm(false);
@@ -1766,271 +1710,71 @@ export default function HomePage() {
 
       {/* Modal: Konfirmasi keluar */}
       {showSignOutConfirm && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-5 z-50">
-          <div className="bg-[var(--card)] rounded-2xl p-5 w-full max-w-sm shadow-xl">
-            <div className="w-11 h-11 rounded-full bg-[var(--red-soft)] flex items-center justify-center mb-3">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" stroke="var(--red)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                <path d="M16 17l5-5-5-5" stroke="var(--red)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                <path d="M21 12H9" stroke="var(--red)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </div>
-            <h2 className="font-ledger text-lg mb-1">Keluar dari akun?</h2>
-            <p className="text-xs text-[var(--ink-soft)] mb-4">Kamu perlu masuk kembali untuk mengakses catatan hutang pelanggan.</p>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={() => setShowSignOutConfirm(false)}
-                className="flex-1 py-2 rounded-lg border border-[var(--paper-line)] text-sm text-[var(--ink-soft)]"
-              >
-                Batal
-              </button>
-              <button
-                type="button"
-                onClick={handleSignOut}
-                className="flex-1 py-2 rounded-lg bg-[var(--red)] text-white text-sm font-medium"
-              >
-                Ya, keluar
-              </button>
-            </div>
-          </div>
-        </div>
+        <SignOutModal onCancel={() => setShowSignOutConfirm(false)} onConfirm={handleSignOut} />
       )}
 
       {/* Modal: Edit nomor WA */}
       {showEditPhone && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-5 z-50">
-          <form onSubmit={handleSavePhone} className="bg-[var(--card)] rounded-2xl p-5 w-full max-w-sm">
-            <h2 className="font-ledger text-lg mb-3">No. WhatsApp pelanggan</h2>
-            <div className="mb-4">
-              <label className="block text-xs text-[var(--ink-soft)] mb-1 font-medium">No. WhatsApp</label>
-              <input
-                value={editPhoneValue}
-                onChange={(e) => setEditPhoneValue(e.target.value)}
-                placeholder="Contoh: 08123456789"
-                className="w-full px-3 py-2 rounded-lg border border-[var(--paper-line)] bg-[var(--paper)] text-sm outline-none focus:border-[var(--gold)] transition-colors"
-              />
-            </div>
-            <div className="flex gap-2">
-              <button type="button" onClick={() => setShowEditPhone(false)} className="flex-1 py-2 rounded-lg border border-[var(--paper-line)] text-sm text-[var(--ink-soft)]">
-                Batal
-              </button>
-              <button type="submit" className="flex-1 py-2 rounded-lg bg-[var(--green)] text-white text-sm font-medium">
-                Simpan
-              </button>
-            </div>
-          </form>
-        </div>
+        <EditPhoneModal
+          value={editPhoneValue}
+          onChange={setEditPhoneValue}
+          onCancel={() => setShowEditPhone(false)}
+          onSubmit={handleSavePhone}
+        />
       )}
 
       {/* Modal: Pilih pelanggan (kasir) */}
       {showCustomerPicker && (
-        <div
-          className="fixed inset-0 bg-black/40 flex items-end sm:items-center justify-center z-50"
-          onClick={() => setShowCustomerPicker(false)}
-        >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            className="bg-[var(--card)] rounded-t-[28px] sm:rounded-2xl w-full sm:max-w-sm max-h-[78vh] flex flex-col shadow-xl animate-rise"
-          >
-            <div className="p-4 pb-3 border-b border-[var(--paper-line)] shrink-0">
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="font-ledger text-base">Pilih pelanggan</h3>
-                <button
-                  type="button"
-                  onClick={() => setShowCustomerPicker(false)}
-                  className="w-7 h-7 rounded-full flex items-center justify-center text-[var(--ink-soft)] hover:bg-[var(--paper)] transition-colors"
-                >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-                    <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                  </svg>
-                </button>
-              </div>
-              <div className="relative">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--ink-soft)] pointer-events-none">
-                  <circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="2" />
-                  <path d="M21 21l-3.5-3.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                </svg>
-                <input
-                  autoFocus
-                  type="text"
-                  value={customerPickerSearch}
-                  onChange={(e) => setCustomerPickerSearch(e.target.value)}
-                  placeholder="Cari nama pelanggan..."
-                  className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-[var(--paper-line)] bg-[var(--paper)] text-sm outline-none focus:border-[var(--gold)] transition-colors"
-                />
-              </div>
-            </div>
-
-            <div className="overflow-y-auto flex-1 p-2">
-              {customerPickerResults.length === 0 && (
-                <div className="text-center py-12 text-sm text-[var(--ink-soft)]">
-                  Tidak ada pelanggan yang cocok.
-                </div>
-              )}
-              {customerPickerResults.map((c) => {
-                const isSelected = c.id === bulkCustomerId;
-                const isLunas = c.balance <= 0;
-                return (
-                  <div
-                    key={c.id}
-                    onClick={() => {
-                      setBulkCustomerId(c.id);
-                      setBulkCustomerError(false);
-                      setShowCustomerPicker(false);
-                    }}
-                    className={`flex items-center gap-3 px-2.5 py-2.5 rounded-xl cursor-pointer select-none transition-colors ${
-                      isSelected ? "bg-[var(--gold-soft)]" : "hover:bg-[var(--paper)]"
-                    }`}
-                  >
-                    <div
-                      style={{ backgroundColor: customerColor(c.name) }}
-                      className="w-9 h-9 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0"
-                    >
-                      {customerInitials(c.name)}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="text-sm font-medium truncate text-[var(--ink)]">{c.name}</div>
-                      <div className={`text-xs mt-0.5 truncate ${isLunas ? "text-[var(--green)]" : "text-[var(--red)]"}`}>
-                        {isLunas ? "Lunas" : `Belum lunas ${formatRupiah(c.balance)}`}
-                      </div>
-                    </div>
-                    {isSelected && (
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="shrink-0 text-[var(--gold)]">
-                        <path d="M20 6 9 17l-5-5" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-                      </svg>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-
-            <div className="p-3 border-t border-[var(--paper-line)] shrink-0">
-              <button
-                type="button"
-                onClick={() => {
-                  setShowCustomerPicker(false);
-                  setShowAddCust(true);
-                }}
-                className="w-full flex items-center justify-center gap-1.5 py-2.5 rounded-xl border border-dashed border-[var(--paper-line)] text-sm text-[var(--gold)] font-semibold hover:bg-[var(--paper)] transition-colors"
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-                  <line x1="12" y1="4" x2="12" y2="20" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
-                  <line x1="4" y1="12" x2="20" y2="12" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
-                </svg>
-                Pelanggan baru
-              </button>
-            </div>
-          </div>
-        </div>
+        <CustomerPickerModal
+          customers={customerPickerResults}
+          search={customerPickerSearch}
+          selectedCustomerId={bulkCustomerId}
+          onSearchChange={setCustomerPickerSearch}
+          onSelect={(customerId) => {
+            setBulkCustomerId(customerId);
+            setBulkCustomerError(false);
+            setShowCustomerPicker(false);
+          }}
+          onClose={() => setShowCustomerPicker(false)}
+          onNewCustomer={() => {
+            setShowCustomerPicker(false);
+            setShowAddCust(true);
+          }}
+        />
       )}
 
       {/* Modal: Tambah pelanggan */}
       {showAddCust && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-5 z-50">
-          <form onSubmit={handleAddCustomer} className="bg-[var(--card)] rounded-2xl p-5 w-full max-w-sm">
-            <h2 className="font-ledger text-lg mb-3">Pelanggan baru</h2>
-            <div className="mb-3">
-              <label className="block text-xs text-[var(--ink-soft)] mb-1 font-medium">Nama pelanggan</label>
-              <input value={custName} onChange={(e) => setCustName(e.target.value)} className="w-full px-3 py-2 rounded-lg border border-[var(--paper-line)] bg-[var(--paper)] text-sm outline-none focus:border-[var(--gold)] transition-colors" />
-              {custNameError && <div className="text-xs text-[var(--red)] mt-1">Nama wajib diisi</div>}
-            </div>
-            <div className="mb-4">
-              <label className="block text-xs text-[var(--ink-soft)] mb-1 font-medium">No. WhatsApp (opsional)</label>
-              <input value={custPhone} onChange={(e) => setCustPhone(e.target.value)} placeholder="Contoh: 08123456789" className="w-full px-3 py-2 rounded-lg border border-[var(--paper-line)] bg-[var(--paper)] text-sm outline-none focus:border-[var(--gold)] transition-colors" />
-            </div>
-            <div className="flex gap-2">
-              <button type="button" onClick={() => setShowAddCust(false)} className="flex-1 py-2 rounded-lg border border-[var(--paper-line)] text-sm text-[var(--ink-soft)]">
-                Batal
-              </button>
-              <button type="submit" className="flex-1 py-2 rounded-lg bg-[var(--green)] text-white text-sm font-medium">
-                Simpan
-              </button>
-            </div>
-          </form>
-        </div>
+        <AddCustomerModal
+          name={custName}
+          phone={custPhone}
+          nameError={custNameError}
+          onNameChange={setCustName}
+          onPhoneChange={setCustPhone}
+          onCancel={() => setShowAddCust(false)}
+          onSubmit={handleAddCustomer}
+        />
       )}
 
       {/* Modal: Tambah hutang */}
       {showAddDebt && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-5 z-50">
-          <form onSubmit={handleAddDebt} className="bg-[var(--card)] rounded-2xl p-5 w-full max-w-sm">
-            <h2 className="font-ledger text-lg mb-3">Tambah hutang baru</h2>
-            <div className="mb-3">
-              <label className="block text-xs text-[var(--ink-soft)] mb-1 font-medium">Barang</label>
-              <input value={debtItemName} onChange={(e) => setDebtItemName(e.target.value)} placeholder="Contoh: Beras 5kg" className="w-full px-3 py-2 rounded-lg border border-[var(--paper-line)] bg-[var(--paper)] text-sm outline-none focus:border-[var(--gold)] transition-colors" />
-            </div>
-            <div className="mb-3">
-              <label className="block text-xs text-[var(--ink-soft)] mb-1 font-medium">Qty (pcs)</label>
-              <input type="number" min="1" value={debtQty} onChange={(e) => handleDebtQtyChange(e.target.value)} className="w-full px-3 py-2 rounded-lg border border-[var(--paper-line)] bg-[var(--paper)] text-sm outline-none focus:border-[var(--gold)] transition-colors" />
-            </div>
-            <div className="mb-3">
-              <label className="block text-xs text-[var(--ink-soft)] mb-1 font-medium">Harga per item (Rp)</label>
-              <input
-                type="number"
-                min="0"
-                value={debtUnitPrice}
-                disabled={(parseInt(debtQty) || 1) <= 1}
-                onChange={(e) => handleDebtUnitPriceChange(e.target.value)}
-                placeholder={(parseInt(debtQty) || 1) <= 1 ? "Otomatis (qty 1)" : ""}
-                className={`w-full px-3 py-2 rounded-lg border text-sm outline-none transition-colors ${
-                  (parseInt(debtQty) || 1) <= 1
-                    ? "border-[var(--paper-line)] bg-[var(--paper-line)]/40 text-[var(--ink-soft)] cursor-not-allowed"
-                    : "border-[var(--paper-line)] bg-[var(--paper)] focus:border-[var(--gold)]"
-                }`}
-              />
-            </div>
-            <div className="mb-3">
-              <label className="block text-xs text-[var(--ink-soft)] mb-1 font-medium">Total harga (Rp)</label>
-              <input
-                type="number"
-                min="0"
-                value={debtAmount}
-                disabled={(parseInt(debtQty) || 1) > 1}
-                onChange={(e) => handleDebtAmountChange(e.target.value)}
-                placeholder={(parseInt(debtQty) || 1) > 1 ? "Otomatis (qty x harga per item)" : ""}
-                className={`w-full px-3 py-2 rounded-lg border text-sm outline-none transition-colors ${
-                  (parseInt(debtQty) || 1) > 1
-                    ? "border-[var(--paper-line)] bg-[var(--paper-line)]/40 text-[var(--ink-soft)] cursor-not-allowed"
-                    : "border-[var(--paper-line)] bg-[var(--paper)] focus:border-[var(--gold)]"
-                }`}
-              />
-              {debtAmountError && <div className="text-xs text-[var(--red)] mt-1">Masukkan jumlah yang benar</div>}
-            </div>
-            <div className="mb-4">
-              <label className="block text-xs text-[var(--ink-soft)] mb-1 font-medium">Tanggal</label>
-              <input type="date" value={debtDate} onChange={(e) => setDebtDate(e.target.value)} className="w-full px-3 py-2 rounded-lg border border-[var(--paper-line)] bg-[var(--paper)] text-sm outline-none focus:border-[var(--gold)] transition-colors" />
-            </div>
-            <div className="mb-4">
-              <label className="block text-xs text-[var(--ink-soft)] mb-1 font-medium">Kasir (opsional)</label>
-              <div className="flex gap-2 flex-wrap mb-2">
-                {["Saya", "Fuji", "Ibu"].map((name) => (
-                  <div
-                    key={name}
-                    onClick={() => setDebtKasir(name)}
-                    className={`px-3 py-1.5 rounded-full border text-xs cursor-pointer ${debtKasir === name ? "bg-[var(--gold)] border-[var(--gold)] text-white" : "border-[var(--paper-line)]"}`}
-                  >
-                    {name}
-                  </div>
-                ))}
-              </div>
-              <input
-                value={debtKasir}
-                onChange={(e) => setDebtKasir(e.target.value)}
-                placeholder="Atau ketik nama kasir"
-                className="w-full px-3 py-2 rounded-lg border border-[var(--paper-line)] bg-[var(--paper)] text-sm outline-none focus:border-[var(--gold)] transition-colors"
-              />
-            </div>
-            <div className="flex gap-2">
-              <button type="button" onClick={() => setShowAddDebt(false)} className="flex-1 py-2 rounded-lg border border-[var(--paper-line)] text-sm text-[var(--ink-soft)]">
-                Batal
-              </button>
-              <button type="submit" className="flex-1 py-2 rounded-lg bg-[var(--green)] text-white text-sm font-medium">
-                Simpan
-              </button>
-            </div>
-          </form>
-        </div>
+        <AddDebtModal
+          itemName={debtItemName}
+          qty={debtQty}
+          unitPrice={debtUnitPrice}
+          amount={debtAmount}
+          date={debtDate}
+          kasir={debtKasir}
+          amountError={debtAmountError}
+          onItemNameChange={setDebtItemName}
+          onQtyChange={handleDebtQtyChange}
+          onUnitPriceChange={handleDebtUnitPriceChange}
+          onAmountChange={handleDebtAmountChange}
+          onDateChange={setDebtDate}
+          onKasirChange={setDebtKasir}
+          onCancel={() => setShowAddDebt(false)}
+          onSubmit={handleAddDebt}
+        />
       )}
 
       {/* Modal: Detail transaksi belanja (piutang) berjalan */}

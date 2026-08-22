@@ -98,7 +98,15 @@ Banyak toko dan warung masih mencatat hutang pelanggan di buku kertas: mudah hil
 
 ```text
 app/
-├── page.jsx                  # Halaman utama: daftar pelanggan, kasir, hutang, pembayaran
+├── page.jsx                  # Orkestrasi halaman utama dan state alur dashboard
+├── components/               # Komponen UI dashboard dan modal
+│   ├── EditPhoneModal.jsx
+│   ├── AddCustomerModal.jsx
+│   ├── AddDebtModal.jsx
+│   ├── CustomerPickerModal.jsx
+│   └── SignOutModal.jsx
+├── hooks/
+│   └── useLedgerData.js      # Data Supabase dan realtime subscription
 ├── layout.jsx                 # Root layout, metadata PWA, font, footer, analytics
 ├── globals.css                 # Style global & variabel tema (light/dark)
 ├── ThemeSwitcher.jsx           # Tombol pengubah tema terang/gelap
@@ -108,7 +116,8 @@ app/
 ├── forgot-password/page.jsx    # Permintaan reset password
 └── reset-password/page.jsx     # Pengaturan password baru
 lib/
-└── supabaseClient.js           # Inisialisasi client Supabase
+├── ledgerUtils.js              # Perhitungan saldo dan utilitas tampilan ledger
+└── supabaseClient.js            # Inisialisasi client Supabase
 public/
 ├── manifest.json               # Konfigurasi PWA (nama, ikon, warna tema)
 ├── sw.js                       # Service worker (cache app shell, auto-update)
