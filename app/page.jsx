@@ -588,10 +588,14 @@ export default function HomePage() {
 
   // Format struk kasir klasik: kode singkat & rata kolom ala mesin kasir,
   // bukan kalimat panjang. Dibungkus ``` agar WhatsApp merendernya sebagai
-  // font monospace (tampilan seperti struk cetak asli). Barang dikelompokkan
-  // per nomor invoice supaya nomornya ikut tampil di struk.
+  // font monospace (tampilan seperti struk cetak asli). Semua produk yang
+  // belum dibayar tetap ditampilkan, tapi nomor invoice yang dicantumkan
+  // cukup 1 saja (yang paling lama) supaya tidak membingungkan.
   function buildWaMessage(cust) {
-    const unpaidItems = debtItems.filter((i) => i.customer_id === cust.id && remainingOf(i) > 0);
+    const unpaidItems = debtItems
+      .filter((i) => i.customer_id === cust.id && remainingOf(i) > 0)
+      .slice()
+      .sort((a, b) => new Date(a.date) - new Date(b.date));
     if (unpaidItems.length === 0) return null;
 
     const WIDTH = 28;
@@ -602,38 +606,17 @@ export default function HomePage() {
       return label + " ".repeat(gap) + value;
     };
 
+    const oldestInvoiceNo = unpaidItems[0].invoice_no || "-";
     const todayStr = new Date().toLocaleDateString("id-ID", { day: "2-digit", month: "2-digit", year: "2-digit" });
 
-    const groups = [];
-    const groupByKey = new Map();
-    unpaidItems.forEach((it) => {
-      const key = it.invoice_no || `${it.date}__${it.kasir || ""}`;
-      if (!groupByKey.has(key)) {
-        const group = { key, invoiceNo: it.invoice_no || null, items: [] };
-        groupByKey.set(key, group);
-        groups.push(group);
-      }
-      groupByKey.get(key).items.push(it);
-    });
-
-    const invoiceBlocks = groups.map((g) => {
-      const itemLines = g.items.map((it) => {
-        const qty = it.qty || 1;
-        const rem = remainingOf(it);
-        const unitPrice = Math.round(rem / qty);
-        const name = (it.item || "Barang").toUpperCase();
-        const qtyPriceStr = "  " + qty + " x " + unitPrice.toLocaleString("id-ID");
-        const totalStr = rem.toLocaleString("id-ID");
-        return name + "\n" + padRight(qtyPriceStr, totalStr);
-      });
-      const subtotal = g.items.reduce((s, it) => s + remainingOf(it), 0);
-      return (
-        "No. Invoice: " + (g.invoiceNo || "-") + "\n" +
-        divider + "\n" +
-        itemLines.join("\n") + "\n" +
-        divider + "\n" +
-        padRight("SUBTOTAL", subtotal.toLocaleString("id-ID"))
-      );
+    const itemLines = unpaidItems.map((it) => {
+      const qty = it.qty || 1;
+      const rem = remainingOf(it);
+      const unitPrice = Math.round(rem / qty);
+      const name = (it.item || "Barang").toUpperCase();
+      const qtyPriceStr = "  " + qty + " x " + unitPrice.toLocaleString("id-ID");
+      const totalStr = rem.toLocaleString("id-ID");
+      return name + "\n" + padRight(qtyPriceStr, totalStr);
     });
 
     const total = unpaidItems.reduce((s, it) => s + remainingOf(it), 0);
@@ -641,13 +624,14 @@ export default function HomePage() {
     const body =
       "STRUK TAGIHAN\n" +
       doubleLine + "\n" +
-      "NM   : " + (cust.name || "-") + "\n" +
+      "INV  : " + oldestInvoiceNo + "\n" +
+      "NAMA : " + (cust.name || "-") + "\n" +
       "TGL  : " + todayStr + "\n" +
-      doubleLine + "\n" +
-      invoiceBlocks.join("\n" + doubleLine + "\n") + "\n" +
-      doubleLine + "\n" +
+      divider + "\n" +
+      itemLines.join("\n") + "\n" +
+      divider + "\n" +
       padRight("TOTAL", formatRupiah(total)) + "\n" +
-      "STATUS: BLM LUNAS\n" +
+      "STATUS: BELUM LUNAS\n" +
       doubleLine;
 
     return "```\n" + body + "\n```";
