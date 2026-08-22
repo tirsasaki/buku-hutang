@@ -1,3 +1,146 @@
+# Buku Hutang
+
+Aplikasi Next.js untuk mencatat hutang pelanggan toko atau warung. Data disimpan di Supabase dan dapat digunakan dari beberapa perangkat.
+
+## Fitur
+
+- Login dan pendaftaran akun dengan Supabase Auth
+- Reset password melalui email
+- Daftar pelanggan beserta nomor telepon
+- Pencatatan hutang per barang, jumlah, tanggal, dan kasir
+- Pembayaran penuh maupun cicilan
+- Pencatatan penerima pembayaran
+- Saldo kredit pelanggan
+- Pencarian, pengurutan, dan filter status hutang
+- Sinkronisasi perubahan data secara real-time
+- Berbagi rincian hutang melalui WhatsApp
+- Tema terang dan gelap
+- Dukungan instalasi sebagai PWA
+
+## Struktur project
+
+```text
+app/
+├── page.jsx                  # Halaman utama dan pengelolaan buku hutang
+├── layout.jsx                # Root layout, metadata, footer, PWA, analytics
+├── globals.css               # Style global dan variabel tema
+├── ThemeSwitcher.jsx         # Pengubah tema
+├── RegisterSW.jsx             # Registrasi service worker
+├── login/page.jsx
+├── signup/page.jsx
+├── forgot-password/page.jsx
+└── reset-password/page.jsx
+lib/
+└── supabaseClient.js         # Client Supabase
+public/
+├── manifest.json
+├── sw.js
+└── ikon PWA
+```
+
+## Persyaratan
+
+- Node.js dan npm
+- Project Supabase
+- Project Vercel jika ingin melakukan deploy
+
+## Konfigurasi Supabase
+
+Skema database dikelola langsung di project Supabase. Pastikan project memiliki tabel berikut:
+
+- `customers` untuk data pelanggan
+- `debt_items` untuk catatan hutang per barang
+- `payments` untuk pembayaran hutang
+- `credit_transactions` untuk transaksi saldo kredit
+
+Setiap tabel yang menyimpan data pengguna perlu memiliki `user_id`. Aktifkan Row Level Security (RLS) dan buat policy agar pengguna hanya dapat melihat serta mengubah data miliknya sendiri. Aktifkan Realtime untuk keempat tabel tersebut agar perubahan dari perangkat lain langsung terlihat.
+
+### Authentication
+
+Di Supabase Dashboard:
+
+1. Buka **Authentication** → **Providers** dan aktifkan Email.
+2. Buat akun melalui halaman `/signup`, atau buat pengguna secara manual dari menu **Users**.
+3. Jika konfirmasi email aktif, pengguna harus mengklik link dari email sebelum login.
+4. Buka **Authentication** → **URL Configuration**.
+5. Tambahkan URL berikut ke **Redirect URLs**:
+   - `http://localhost:3000/reset-password` untuk development
+   - `https://domain-anda.com/reset-password` untuk production
+
+## Menjalankan secara lokal
+
+Clone project lalu install dependency:
+
+```bash
+npm install
+```
+
+Salin file environment:
+
+```bash
+cp .env.local.example .env.local
+```
+
+Isi `.env.local` menggunakan nilai dari **Supabase Dashboard** → **Settings** → **API**:
+
+```env
+NEXT_PUBLIC_SUPABASE_URL=https://xxxxxxxxxxxx.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=isi_dengan_anon_public_key_anda
+```
+
+Jalankan development server:
+
+```bash
+npm run dev
+```
+
+Buka [http://localhost:3000](http://localhost:3000), lalu masuk atau buat akun baru.
+
+## Script npm
+
+```bash
+npm run dev       # Development server
+npm run build     # Build production
+npm run start     # Menjalankan hasil build production
+npm run lint      # Pemeriksaan lint
+```
+
+## Deploy ke Vercel
+
+1. Push project ke repository GitHub.
+2. Import repository tersebut di Vercel.
+3. Tambahkan environment variables berikut di pengaturan project Vercel:
+   - `NEXT_PUBLIC_SUPABASE_URL`
+   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+4. Deploy project.
+5. Tambahkan URL production dan `/reset-password` ke **Redirect URLs** di Supabase.
+
+Vercel akan melakukan deploy ulang setiap kali perubahan baru di-push ke branch yang terhubung.
+
+## Keamanan
+
+- Jangan commit `.env.local` atau membagikan anon key bersama kredensial lain.
+- Anon key boleh digunakan di browser, tetapi keamanan data tetap bergantung pada policy RLS Supabase.
+- Jangan menonaktifkan RLS pada tabel aplikasi.
+- Uji policy dengan lebih dari satu akun untuk memastikan data antar pengguna tidak tercampur.
+
+## Troubleshooting
+
+### Login atau data gagal dimuat
+
+Periksa URL dan anon key di `.env.local`, lalu pastikan tabel dan policy RLS sudah tersedia di Supabase.
+
+### Data tidak sinkron antar perangkat
+
+Pastikan Realtime aktif untuk `customers`, `debt_items`, `payments`, dan `credit_transactions`.
+
+### Reset password tidak kembali ke aplikasi
+
+Pastikan URL `/reset-password` untuk localhost dan production sudah terdaftar di Supabase **Redirect URLs**.
+
+### Halaman blank setelah deploy
+
+Periksa environment variables di Vercel dan lihat log build/deployment untuk detail error.
 # 📒 Buku Hutang
 
 Aplikasi web sederhana untuk mencatat hutang pelanggan toko/warung — menggantikan cara manual pakai Excel atau buku catatan. Cocok dipakai bareng-bareng dengan keluarga atau siapa pun yang biasa menerima pembayaran dari pelanggan.
