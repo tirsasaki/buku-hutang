@@ -1480,7 +1480,7 @@ export default function HomePage() {
             </div>
           </div>
 
-          <div className="flex gap-2.5 mb-2.5">
+          <div className="flex gap-2.5 mb-4">
             <button
               onClick={() => handleShare(selectedCustomer)}
               className="flex-1 flex items-center justify-center gap-1.5 py-3 rounded-2xl bg-[var(--card)] border border-[var(--paper-line)] text-sm font-medium text-[var(--ink)] shadow-sm hover:shadow active:scale-[0.98] transition-all duration-200"
@@ -1504,47 +1504,53 @@ export default function HomePage() {
                 <path d="M5.5 15.5h-1a2 2 0 0 1-2-2v-9a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" stroke="currentColor" strokeWidth="1.6" />
               </svg>
             </button>
-          </div>
-
-          <div className="flex gap-2.5 mb-4">
             <button
               onClick={() => handleShareWa(selectedCustomer)}
-              className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-2xl bg-[var(--green-soft)]/60 border border-transparent text-[var(--green)] text-xs font-medium hover:brightness-[0.97] active:scale-[0.98] transition-all duration-200"
+              title="Langsung ke WhatsApp"
+              aria-label="Langsung ke WhatsApp"
+              className="flex-none w-12 flex items-center justify-center rounded-2xl bg-[var(--green-soft)] border border-transparent text-[var(--green)] shadow-sm hover:brightness-[0.97] active:scale-[0.98] transition-all duration-200"
             >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
                 <path
                   d="M17.6 6.3A8.4 8.4 0 0 0 3.9 15.9L3 21l5.2-1.4A8.4 8.4 0 1 0 17.6 6.3Z"
-                  stroke="var(--green)"
+                  stroke="currentColor"
                   strokeWidth="1.6"
                   strokeLinejoin="round"
                 />
-                <path d="M8.5 9.7c.3 2.6 2.5 4.7 5.1 5" stroke="var(--green)" strokeWidth="1.6" strokeLinecap="round" />
+                <path d="M8.5 9.7c.3 2.6 2.5 4.7 5.1 5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
               </svg>
-              Langsung ke WhatsApp
-            </button>
-            <button
-              onClick={openBulkLunasModal}
-              className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-2xl bg-[var(--green-soft)] border border-transparent text-[var(--green)] text-xs font-semibold hover:brightness-[0.97] active:scale-[0.98] transition-all duration-200"
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-                <path d="M20 6 9 17l-5-5" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-              Tandai semua lunas
             </button>
           </div>
 
-          {creditBalanceForCustomer(selectedCustomer.id) > 0 && balanceForCustomer(selectedCustomer.id) > 0 && (
-            <button
-              onClick={openUseCreditModal}
-              className="w-full mb-4 flex items-center justify-center gap-1.5 py-3 rounded-2xl bg-[var(--card)] border border-[var(--gold)]/40 text-[var(--gold)] text-sm font-medium shadow-sm hover:bg-[var(--gold-soft)] active:scale-[0.98] transition-all duration-200"
-            >
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
-                <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.6" />
-                <path d="M12 7.5v9M9.5 9.7c0-1.2 1.1-2.2 2.5-2.2s2.5.8 2.5 1.9-1 1.6-2.5 1.9-2.5.8-2.5 1.9 1.1 1.9 2.5 1.9 2.5-.9 2.5-2.1" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
-              </svg>
-              Pakai saldo lebih untuk bayar hutang
-            </button>
-          )}
+          <div className="mb-4">
+            <div className="text-[11px] text-[var(--ink-soft)] uppercase tracking-[0.12em] font-medium mb-2 px-0.5">
+              Pelunasan
+            </div>
+            <div className="flex flex-col gap-2.5">
+              <button
+                onClick={openBulkLunasModal}
+                className="w-full flex items-center justify-center gap-1.5 py-3 rounded-2xl bg-[var(--green-soft)] border border-transparent text-[var(--green)] text-sm font-semibold shadow-sm hover:brightness-[0.97] active:scale-[0.98] transition-all duration-200"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                  <path d="M20 6 9 17l-5-5" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                Tandai semua lunas
+              </button>
+
+              {creditBalanceForCustomer(selectedCustomer.id) > 0 && balanceForCustomer(selectedCustomer.id) > 0 && (
+                <button
+                  onClick={openUseCreditModal}
+                  className="w-full flex items-center justify-center gap-1.5 py-3 rounded-2xl bg-[var(--card)] border border-[var(--gold)]/40 text-[var(--gold)] text-sm font-medium shadow-sm hover:bg-[var(--gold-soft)] active:scale-[0.98] transition-all duration-200"
+                >
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
+                    <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.6" />
+                    <path d="M12 7.5v9M9.5 9.7c0-1.2 1.1-2.2 2.5-2.2s2.5.8 2.5 1.9-1 1.6-2.5 1.9-2.5.8-2.5 1.9 1.1 1.9 2.5 1.9 2.5-.9 2.5-2.1" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+                  </svg>
+                  Pakai saldo lebih untuk bayar hutang
+                </button>
+              )}
+            </div>
+          </div>
 
           <div className="relative flex bg-[var(--card)] border border-[var(--paper-line)] rounded-xl p-1 mb-3.5 text-sm font-medium">
             <div
