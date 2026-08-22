@@ -79,6 +79,40 @@ button,
     box-shadow 180ms ease;
 }
 
+/* Pastikan semua input/select/textarea selalu memakai warna tema
+   (latar & teks), bukan warna bawaan browser. Tanpa ini, browser bisa
+   menampilkan latar putih bawaan sementara warna teks mengikuti tema
+   gelap (--ink terang) → teks putih di atas kolom putih, tak terbaca. */
+input,
+select,
+textarea {
+  background-color: var(--card);
+  color: var(--ink);
+  color-scheme: light;
+}
+
+[data-theme="dark"] input,
+[data-theme="dark"] select,
+[data-theme="dark"] textarea {
+  color-scheme: dark;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--ink-faint);
+  opacity: 1;
+}
+
+/* Autofill browser (mis. Chrome) juga sering memaksa latar putih;
+   paksa kembali ke warna kartu tema saat autofill aktif. */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--ink);
+  -webkit-box-shadow: 0 0 0 1000px var(--card) inset;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
 @media (prefers-reduced-motion: reduce) {
   * {
     scroll-behavior: auto !important;

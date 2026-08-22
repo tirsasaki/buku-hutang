@@ -683,59 +683,111 @@ export default function HomePage() {
             </div>
           </div>
 
-          <div className="relative overflow-hidden bg-[var(--card)] border border-[var(--paper-line)] rounded-2xl shadow-sm mb-5">
+          <div className="relative overflow-hidden bg-gradient-to-br from-[var(--card)] to-[var(--surface-soft)] border border-[var(--paper-line)] rounded-[22px] shadow-sm mb-3">
             <div
-              className="absolute -top-10 -right-10 w-32 h-32 rounded-full opacity-[0.10] pointer-events-none"
+              className="absolute -top-14 -right-14 w-40 h-40 rounded-full opacity-[0.09] pointer-events-none blur-[2px]"
               style={{ background: "var(--red)" }}
             />
             <div
-              className="absolute -bottom-12 -left-8 w-28 h-28 rounded-full opacity-[0.06] pointer-events-none"
+              className="absolute -bottom-16 -left-10 w-32 h-32 rounded-full opacity-[0.05] pointer-events-none blur-[2px]"
               style={{ background: "var(--gold)" }}
             />
-            <div className="relative p-4">
-              <div className="flex items-center gap-3.5">
-                <div className="w-11 h-11 rounded-xl bg-[var(--red-soft)] flex items-center justify-center shrink-0">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                    <path
-                      d="M12 2v20M17 6.5c0-1.93-2.24-3.5-5-3.5S7 4.57 7 6.5 9.24 9 12 9s5 1.07 5 3.5-2.24 3.5-5 3.5-5-1.07-5-3.5"
-                      stroke="var(--red)"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                </div>
+            {/* Garis perforasi tipis di tepi atas, ala kupon nota */}
+            <div
+              className="absolute top-0 left-6 right-6 h-px opacity-40 pointer-events-none"
+              style={{
+                backgroundImage: "repeating-linear-gradient(90deg, var(--ink-faint) 0 4px, transparent 4px 9px)",
+              }}
+            />
+
+            <div className="relative p-5">
+              <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0 flex-1">
-                  <div className="text-xs text-[var(--ink-soft)] uppercase tracking-wide font-medium">Total belum lunas</div>
-                  <div className="font-mono-num text-[28px] leading-tight font-bold text-[var(--red)] truncate">{formatRupiah(totalUnpaid)}</div>
+                  <div className="flex items-center gap-1.5 text-[var(--ink-soft)]">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
+                      <path
+                        d="M12 2v20M17 6.5c0-1.93-2.24-3.5-5-3.5S7 4.57 7 6.5 9.24 9 12 9s5 1.07 5 3.5-2.24 3.5-5 3.5-5-1.07-5-3.5"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                    <span className="text-[11px] uppercase tracking-[0.12em] font-semibold">Total belum lunas</span>
+                  </div>
+                  <div className="font-mono-num text-[32px] leading-[1.15] font-bold text-[var(--red)] mt-1.5 tabular-nums truncate">
+                    {formatRupiah(totalUnpaid)}
+                  </div>
                 </div>
+
+                {totalCustomers > 0 && (
+                  <div className="relative shrink-0 w-[58px] h-[58px]">
+                    <svg width="58" height="58" viewBox="0 0 58 58" className="-rotate-90">
+                      <circle cx="29" cy="29" r="24" fill="none" stroke="var(--paper-line)" strokeWidth="5" />
+                      <circle
+                        cx="29"
+                        cy="29"
+                        r="24"
+                        fill="none"
+                        stroke="var(--red)"
+                        strokeWidth="5"
+                        strokeLinecap="round"
+                        strokeDasharray={2 * Math.PI * 24}
+                        strokeDashoffset={2 * Math.PI * 24 * (1 - unpaidRatio / 100)}
+                        style={{ transition: "stroke-dashoffset 600ms ease" }}
+                      />
+                    </svg>
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <span className="font-mono-num text-[13px] font-bold text-[var(--ink)]">{unpaidRatio}%</span>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {totalCustomers > 0 && (
-                <>
-                  <div className="h-1.5 rounded-full bg-[var(--paper-line)] mt-4 overflow-hidden">
-                    <div
-                      className="h-full rounded-full bg-[var(--red)] transition-all duration-500"
-                      style={{ width: `${unpaidRatio}%` }}
-                    />
+                <div className="flex items-center gap-4 mt-4 pt-3.5 border-t border-dashed border-[var(--paper-line)]">
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-[var(--red)] shrink-0" />
+                    <span className="text-xs text-[var(--ink-soft)]">
+                      <span className="font-semibold text-[var(--ink)]">{countUnpaid}</span> belum lunas
+                    </span>
                   </div>
-                  <div className="flex items-center justify-between mt-3 gap-2">
-                    <div className="flex items-center gap-1.5">
-                      <span className="w-2 h-2 rounded-full bg-[var(--red)] shrink-0" />
-                      <span className="text-xs text-[var(--ink-soft)]">
-                        <span className="font-semibold text-[var(--ink)]">{countUnpaid}</span> belum lunas
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <span className="w-2 h-2 rounded-full bg-[var(--green)] shrink-0" />
-                      <span className="text-xs text-[var(--ink-soft)]">
-                        <span className="font-semibold text-[var(--ink)]">{countLunas}</span> lunas
-                      </span>
-                    </div>
-                    <div className="text-xs text-[var(--ink-soft)] ml-auto">{totalCustomers} pelanggan</div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-[var(--green)] shrink-0" />
+                    <span className="text-xs text-[var(--ink-soft)]">
+                      <span className="font-semibold text-[var(--ink)]">{countLunas}</span> lunas
+                    </span>
                   </div>
-                </>
+                </div>
               )}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3 mb-5">
+            <div className="relative overflow-hidden bg-[var(--card)] border border-[var(--paper-line)] rounded-2xl shadow-sm p-4">
+              <div className="w-9 h-9 rounded-xl bg-[var(--gold-soft)] flex items-center justify-center mb-2.5">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                  <path
+                    d="M17 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2M10 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"
+                    stroke="var(--gold)"
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </div>
+              <div className="text-[11px] text-[var(--ink-soft)] uppercase tracking-[0.08em] font-medium">Jumlah pelanggan</div>
+              <div className="font-mono-num text-2xl font-bold text-[var(--ink)] mt-0.5 tabular-nums">{totalCustomers}</div>
+            </div>
+
+            <div className="relative overflow-hidden bg-[var(--card)] border border-[var(--paper-line)] rounded-2xl shadow-sm p-4">
+              <div className="w-9 h-9 rounded-xl bg-[var(--green-soft)] flex items-center justify-center mb-2.5">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                  <path d="M20 6 9 17l-5-5" stroke="var(--green)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </div>
+              <div className="text-[11px] text-[var(--ink-soft)] uppercase tracking-[0.08em] font-medium">Sudah lunas</div>
+              <div className="font-mono-num text-2xl font-bold text-[var(--ink)] mt-0.5 tabular-nums">{countLunas}</div>
             </div>
           </div>
 
@@ -947,7 +999,7 @@ export default function HomePage() {
             <>
               <div className="flex gap-2 mb-3">
                 <div className="relative flex-1 min-w-0">
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--ink-soft)] pointer-events-none">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--ink-soft)] pointer-events-none">
                     <circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="2" />
                     <path d="M21 21l-3.5-3.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
                   </svg>
@@ -956,7 +1008,7 @@ export default function HomePage() {
                     placeholder="Cari nama pelanggan..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-9 pr-8 py-2.5 rounded-xl border border-[var(--paper-line)] bg-[var(--card)] text-sm outline-none focus:border-[var(--gold)] transition-colors"
+                    className="w-full pl-9 pr-8 py-2.5 rounded-2xl border border-[var(--paper-line)] bg-[var(--card)] text-sm shadow-sm outline-none focus:border-[var(--gold)] focus:ring-4 focus:ring-[var(--gold)]/10 transition-all duration-200"
                   />
                   {searchTerm && (
                     <div
@@ -974,8 +1026,8 @@ export default function HomePage() {
                     type="button"
                     onClick={() => setShowSortMenu((v) => !v)}
                     title="Urutkan"
-                    className={`w-[42px] h-[42px] rounded-xl border flex items-center justify-center transition-colors ${
-                      showSortMenu ? "border-[var(--gold)] bg-[var(--card)] text-[var(--gold)]" : "border-[var(--paper-line)] bg-[var(--card)] text-[var(--ink-soft)]"
+                    className={`w-[42px] h-[42px] rounded-2xl border shadow-sm flex items-center justify-center transition-all duration-200 ${
+                      showSortMenu ? "border-[var(--gold)] bg-[var(--gold-soft)] text-[var(--gold)]" : "border-[var(--paper-line)] bg-[var(--card)] text-[var(--ink-soft)] hover:border-[var(--gold)]"
                     }`}
                   >
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
@@ -1014,34 +1066,45 @@ export default function HomePage() {
 
               <div className="flex gap-2 mb-4">
                 {[
-                  { id: "semua", label: "Semua" },
-                  { id: "belum", label: "Belum lunas" },
-                  { id: "lunas", label: "Lunas" },
+                  { id: "semua", label: "Semua", count: totalCustomers },
+                  { id: "belum", label: "Belum lunas", count: countUnpaid },
+                  { id: "lunas", label: "Lunas", count: countLunas },
                 ].map((f) => (
                   <div
                     key={f.id}
                     onClick={() => setStatusFilter(f.id)}
-                    className={`px-3 py-1.5 rounded-full border text-xs font-medium cursor-pointer select-none transition-colors ${
-                      statusFilter === f.id ? "bg-[var(--ink)] border-[var(--ink)] text-[var(--paper)]" : "border-[var(--paper-line)] text-[var(--ink-soft)] hover:border-[var(--gold)]"
+                    className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold cursor-pointer select-none transition-all duration-200 ${
+                      statusFilter === f.id
+                        ? "bg-[var(--ink)] text-[var(--paper)] shadow-sm"
+                        : "bg-[var(--card)] border border-[var(--paper-line)] text-[var(--ink-soft)] hover:border-[var(--gold)]"
                     }`}
                   >
                     {f.label}
+                    <span
+                      className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full leading-none ${
+                        statusFilter === f.id ? "bg-white/20" : "bg-[var(--paper)] text-[var(--ink-faint)]"
+                      }`}
+                    >
+                      {f.count}
+                    </span>
                   </div>
                 ))}
               </div>
 
               <div className="flex flex-col gap-2.5">
                 {filteredCustomers.length === 0 && (
-                  <div className="text-center py-14 text-sm text-[var(--ink-soft)]">
-                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" className="mx-auto mb-2 opacity-40">
-                      <path
-                        d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
+                  <div className="text-center py-16 text-sm text-[var(--ink-soft)]">
+                    <div className="w-14 h-14 rounded-2xl bg-[var(--card)] border border-[var(--paper-line)] flex items-center justify-center mx-auto mb-3">
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="opacity-40">
+                        <path
+                          d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                    </div>
                     {searchTerm || statusFilter !== "semua" ? "Tidak ada pelanggan yang cocok." : "Belum ada pelanggan tercatat."}
                   </div>
                 )}
@@ -1049,40 +1112,46 @@ export default function HomePage() {
                   const isLunas = c.balance <= 0;
                   const credit = creditBalanceForCustomer(c.id);
                   const lastStr = c.last
-                    ? new Date(c.last).toLocaleDateString("id-ID", { day: "numeric", month: "short" })
-                    : "Belum ada transaksi";
+                    ? new Date(c.last).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })
+                    : null;
                   const ccolor = customerColor(c.name);
                   return (
                     <div
                       key={c.id}
                       onClick={() => selectCustomer(c.id)}
-                      className={`relative overflow-hidden bg-[var(--card)] border border-[var(--paper-line)] rounded-2xl shadow-sm pl-4 pr-3.5 py-3.5 cursor-pointer hover:border-[var(--gold)] hover:shadow-md active:scale-[0.99] transition-all duration-200 ${
-                        isLunas ? "opacity-75" : ""
+                      className={`group relative overflow-hidden bg-[var(--card)] border border-[var(--paper-line)] rounded-[20px] shadow-sm pl-4 pr-3.5 py-3.5 cursor-pointer hover:border-[var(--gold)]/50 hover:shadow-md transition-all duration-200 ${
+                        isLunas ? "opacity-[0.82]" : ""
                       }`}
                     >
                       <div
-                        className="absolute left-0 top-0 bottom-0 w-1"
+                        className="absolute left-0 top-3 bottom-3 w-[3px] rounded-full"
                         style={{ background: isLunas ? "var(--green)" : "var(--red)" }}
                       />
                       <div className="flex justify-between items-center gap-3">
                         <div className="flex items-center gap-3 min-w-0">
                           <div
                             style={{ backgroundColor: ccolor, boxShadow: `0 0 0 3px ${ccolor}22` }}
-                            className="w-10 h-10 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0"
+                            className="w-11 h-11 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0 shadow-sm"
                           >
                             {customerInitials(c.name)}
                           </div>
                           <div className="min-w-0">
-                            <div className="font-semibold text-sm truncate">{c.name}</div>
+                            <div className="font-semibold text-sm truncate text-[var(--ink)]">{c.name}</div>
                             <div className="text-xs text-[var(--ink-soft)] mt-0.5 flex items-center gap-1">
                               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" className="shrink-0">
-                                <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2" />
-                                <path d="M12 7v5l3 3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                                <rect x="3.5" y="4.5" width="17" height="16" rx="2.5" stroke="currentColor" strokeWidth="1.8" />
+                                <path d="M3.5 9h17M8 3v3M16 3v3" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
                               </svg>
-                              <span className="truncate">{lastStr}</span>
+                              <span className="truncate">
+                                {lastStr ? <>Transaksi terakhir: {lastStr}</> : "Belum ada transaksi"}
+                              </span>
                             </div>
                             {credit > 0 && (
-                              <div className="text-[11px] text-[var(--gold)] mt-0.5 truncate">
+                              <div className="inline-flex items-center gap-1 text-[11px] text-[var(--gold)] mt-1 bg-[var(--gold-soft)] px-1.5 py-0.5 rounded-md truncate">
+                                <svg width="9" height="9" viewBox="0 0 24 24" fill="none" className="shrink-0">
+                                  <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2.5" />
+                                  <path d="M12 7v5l3 2" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                                </svg>
                                 Saldo lebih {formatRupiah(credit)}
                               </div>
                             )}
@@ -1090,7 +1159,7 @@ export default function HomePage() {
                         </div>
                         <div className="text-right shrink-0 flex items-center gap-1.5">
                           <div>
-                            <div className={`font-mono-num text-base font-semibold ${isLunas ? "text-[var(--green)]" : "text-[var(--red)]"}`}>
+                            <div className={`font-mono-num text-base font-semibold tabular-nums ${isLunas ? "text-[var(--green)]" : "text-[var(--red)]"}`}>
                               {formatRupiah(c.balance)}
                             </div>
                             {isLunas ? (
@@ -1103,7 +1172,13 @@ export default function HomePage() {
                               </span>
                             )}
                           </div>
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="text-[var(--ink-soft)] opacity-40 shrink-0">
+                          <svg
+                            width="16"
+                            height="16"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            className="text-[var(--ink-soft)] opacity-40 shrink-0 transition-transform duration-200 group-hover:translate-x-0.5 group-hover:opacity-70"
+                          >
                             <path d="M9 18l6-6-6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                           </svg>
                         </div>
@@ -1137,61 +1212,104 @@ export default function HomePage() {
         </>
       ) : (
         <>
-          <div
+          <button
             onClick={() => setSelectedCustomerId(null)}
-            className="text-sm text-[var(--ink-soft)] cursor-pointer mb-3 select-none"
+            className="group inline-flex items-center gap-1.5 -ml-2 px-2 py-1.5 rounded-lg text-sm text-[var(--ink-soft)] hover:text-[var(--ink)] hover:bg-[var(--card)] active:scale-95 transition-all duration-200 select-none mb-3"
           >
-            &larr; Kembali ke daftar pelanggan
-          </div>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="shrink-0 transition-transform duration-200 group-hover:-translate-x-0.5">
+              <path d="M15 18l-6-6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            Daftar pelanggan
+          </button>
 
-          <div className="bg-[var(--card)] border border-[var(--paper-line)] rounded-xl shadow-sm p-5 text-center mb-4">
+          <div className="relative overflow-hidden bg-gradient-to-br from-[var(--card)] to-[var(--surface-soft)] border border-[var(--paper-line)] rounded-[26px] shadow-sm p-6 text-center mb-4">
             <div
-              style={{ backgroundColor: customerColor(selectedCustomer.name) }}
-              className="w-14 h-14 rounded-full flex items-center justify-center text-white text-lg font-bold mx-auto mb-2.5"
-            >
-              {customerInitials(selectedCustomer.name)}
-            </div>
-            <div className="font-ledger text-xl mb-1">{selectedCustomer.name}</div>
-            <div className="text-xs text-[var(--ink-soft)] mb-2">
+              className="absolute -top-16 -right-14 w-40 h-40 rounded-full opacity-[0.08] pointer-events-none blur-[2px]"
+              style={{ background: "var(--gold)" }}
+            />
+            <div
+              className="absolute -bottom-16 -left-12 w-36 h-36 rounded-full opacity-[0.06] pointer-events-none blur-[2px]"
+              style={{ background: balanceForCustomer(selectedCustomer.id) <= 0 ? "var(--green)" : "var(--red)" }}
+            />
+
+            <div className="relative">
+              <div
+                style={{ backgroundColor: customerColor(selectedCustomer.name) }}
+                className="w-16 h-16 rounded-full flex items-center justify-center text-white text-xl font-bold mx-auto mb-3 shadow-md ring-4 ring-[var(--card)]"
+              >
+                {customerInitials(selectedCustomer.name)}
+              </div>
+              <div className="font-ledger text-2xl mb-1.5">{selectedCustomer.name}</div>
+
               {selectedCustomer.phone && selectedCustomer.phone.trim() ? (
-                <>
-                  No. WA: {selectedCustomer.phone}{" "}
-                  <span onClick={() => openEditPhoneModal(selectedCustomer)} className="underline cursor-pointer">
-                    Ubah
-                  </span>
-                </>
+                <button
+                  onClick={() => openEditPhoneModal(selectedCustomer)}
+                  className="inline-flex items-center gap-1.5 text-xs text-[var(--ink-soft)] hover:text-[var(--ink)] bg-[var(--paper)]/60 hover:bg-[var(--paper)] border border-[var(--paper-line)] rounded-full px-3 py-1.5 transition-colors duration-200"
+                >
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
+                    <path d="M3 5.5A1.5 1.5 0 0 1 4.5 4h3.1a1 1 0 0 1 .98.79l.7 3.15a1 1 0 0 1-.27.94L7.6 10.4a11 11 0 0 0 6 6l1.52-1.4a1 1 0 0 1 .95-.27l3.14.7a1 1 0 0 1 .79.98v3.1a1.5 1.5 0 0 1-1.5 1.5H18C9.72 21 3 14.28 3 6V5.5Z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
+                  </svg>
+                  {selectedCustomer.phone}
+                  <span className="text-[var(--ink-faint)]">&middot; ubah</span>
+                </button>
               ) : (
-                <span onClick={() => openEditPhoneModal(selectedCustomer)} className="underline cursor-pointer">
-                  + Tambah nomor WA
-                </span>
+                <button
+                  onClick={() => openEditPhoneModal(selectedCustomer)}
+                  className="inline-flex items-center gap-1.5 text-xs font-medium text-[var(--gold)] bg-[var(--gold-soft)] hover:brightness-95 rounded-full px-3 py-1.5 transition-all duration-200"
+                >
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
+                    <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                  </svg>
+                  Tambah nomor WA
+                </button>
+              )}
+
+              <div className="mt-5 pt-4 border-t border-dashed border-[var(--paper-line)]">
+                <div className="text-[11px] text-[var(--ink-soft)] uppercase tracking-[0.12em] font-medium">Total sisa hutang</div>
+                <div
+                  className={`font-mono-num text-[34px] leading-tight font-bold mt-1 tabular-nums ${
+                    balanceForCustomer(selectedCustomer.id) <= 0 ? "text-[var(--green)]" : "text-[var(--red)]"
+                  }`}
+                >
+                  {formatRupiah(balanceForCustomer(selectedCustomer.id))}
+                </div>
+              </div>
+
+              {creditBalanceForCustomer(selectedCustomer.id) > 0 && (
+                <div className="inline-flex items-center gap-1.5 mt-3 px-3 py-1.5 rounded-full bg-[var(--gold-soft)] text-[var(--gold)] text-xs font-medium">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
+                    <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2" />
+                    <path d="M12 7v5l3 2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                  Saldo lebih: {formatRupiah(creditBalanceForCustomer(selectedCustomer.id))}
+                </div>
               )}
             </div>
-            <div className="text-xs text-[var(--ink-soft)] uppercase tracking-wide">Total sisa hutang</div>
-            <div className={`font-mono-num text-3xl font-semibold mt-0.5 ${balanceForCustomer(selectedCustomer.id) <= 0 ? "text-[var(--green)]" : "text-[var(--red)]"}`}>
-              {formatRupiah(balanceForCustomer(selectedCustomer.id))}
-            </div>
-            {creditBalanceForCustomer(selectedCustomer.id) > 0 && (
-              <div className="inline-flex items-center gap-1.5 mt-2.5 px-3 py-1 rounded-full bg-[var(--gold-soft)] text-[var(--gold)] text-xs font-medium">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
-                  <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2" />
-                  <path d="M12 7v5l3 2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-                Saldo lebih: {formatRupiah(creditBalanceForCustomer(selectedCustomer.id))}
-              </div>
-            )}
           </div>
 
-          <div className="flex gap-2 mb-4">
+          <div className="flex gap-2.5 mb-4">
             <button
               onClick={() => handleShareWa(selectedCustomer)}
-              className="flex-1 py-2.5 rounded-lg bg-[var(--card)] border border-[var(--paper-line)] text-sm font-medium"
+              className="flex-1 flex items-center justify-center gap-1.5 py-3 rounded-2xl bg-[var(--card)] border border-[var(--paper-line)] text-sm font-medium text-[var(--ink)] shadow-sm hover:shadow active:scale-[0.98] transition-all duration-200"
             >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                <path
+                  d="M17.6 6.3A8.4 8.4 0 0 0 3.9 15.9L3 21l5.2-1.4A8.4 8.4 0 1 0 17.6 6.3Z"
+                  stroke="var(--green)"
+                  strokeWidth="1.6"
+                  strokeLinejoin="round"
+                />
+                <path d="M8.5 9.7c.3 2.6 2.5 4.7 5.1 5" stroke="var(--green)" strokeWidth="1.6" strokeLinecap="round" />
+              </svg>
               Bagikan ke WhatsApp
             </button>
             <button
               onClick={openBulkLunasModal}
-              className="flex-1 py-2.5 rounded-lg bg-[var(--card)] border border-[var(--green-soft)] text-[var(--green)] text-sm font-medium"
+              className="flex-1 flex items-center justify-center gap-1.5 py-3 rounded-2xl bg-[var(--green-soft)] border border-transparent text-[var(--green)] text-sm font-semibold shadow-sm hover:brightness-[0.97] active:scale-[0.98] transition-all duration-200"
             >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                <path d="M20 6 9 17l-5-5" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
               Tandai semua lunas
             </button>
           </div>
@@ -1199,8 +1317,12 @@ export default function HomePage() {
           {creditBalanceForCustomer(selectedCustomer.id) > 0 && balanceForCustomer(selectedCustomer.id) > 0 && (
             <button
               onClick={openUseCreditModal}
-              className="w-full mb-4 py-2.5 rounded-lg bg-[var(--card)] border border-[var(--gold)]/40 text-[var(--gold)] text-sm font-medium"
+              className="w-full mb-4 flex items-center justify-center gap-1.5 py-3 rounded-2xl bg-[var(--card)] border border-[var(--gold)]/40 text-[var(--gold)] text-sm font-medium shadow-sm hover:bg-[var(--gold-soft)] active:scale-[0.98] transition-all duration-200"
             >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
+                <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.6" />
+                <path d="M12 7.5v9M9.5 9.7c0-1.2 1.1-2.2 2.5-2.2s2.5.8 2.5 1.9-1 1.6-2.5 1.9-2.5.8-2.5 1.9 1.1 1.9 2.5 1.9 2.5-.9 2.5-2.1" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+              </svg>
               Pakai saldo lebih untuk bayar hutang
             </button>
           )}
@@ -1400,11 +1522,16 @@ export default function HomePage() {
             </svg>
           </button>
 
-          <div
-            onClick={() => deleteCustomer(selectedCustomer)}
-            className="text-center text-sm text-[var(--red)] mt-5 mb-20 cursor-pointer select-none"
-          >
-            Hapus pelanggan ini
+          <div className="flex justify-center mt-6 mb-20">
+            <button
+              onClick={() => deleteCustomer(selectedCustomer)}
+              className="inline-flex items-center gap-1.5 text-sm text-[var(--ink-soft)] hover:text-[var(--red)] hover:bg-[var(--red-soft)] px-3.5 py-2 rounded-full transition-colors duration-200 select-none"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                <path d="M4 7h16M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2m2 0-.8 12.1A2 2 0 0 1 16.2 21H7.8a2 2 0 0 1-2-1.9L5 7" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              Hapus pelanggan ini
+            </button>
           </div>
         </>
       )}
@@ -1453,7 +1580,7 @@ export default function HomePage() {
                 value={editPhoneValue}
                 onChange={(e) => setEditPhoneValue(e.target.value)}
                 placeholder="Contoh: 08123456789"
-                className="w-full px-3 py-2 rounded-lg border border-[var(--paper-line)] text-sm"
+                className="w-full px-3 py-2 rounded-lg border border-[var(--paper-line)] bg-[var(--paper)] text-sm outline-none focus:border-[var(--gold)] transition-colors"
               />
             </div>
             <div className="flex gap-2">
@@ -1475,12 +1602,12 @@ export default function HomePage() {
             <h2 className="font-ledger text-lg mb-3">Pelanggan baru</h2>
             <div className="mb-3">
               <label className="block text-xs text-[var(--ink-soft)] mb-1 font-medium">Nama pelanggan</label>
-              <input value={custName} onChange={(e) => setCustName(e.target.value)} className="w-full px-3 py-2 rounded-lg border border-[var(--paper-line)] text-sm" />
+              <input value={custName} onChange={(e) => setCustName(e.target.value)} className="w-full px-3 py-2 rounded-lg border border-[var(--paper-line)] bg-[var(--paper)] text-sm outline-none focus:border-[var(--gold)] transition-colors" />
               {custNameError && <div className="text-xs text-[var(--red)] mt-1">Nama wajib diisi</div>}
             </div>
             <div className="mb-4">
               <label className="block text-xs text-[var(--ink-soft)] mb-1 font-medium">No. WhatsApp (opsional)</label>
-              <input value={custPhone} onChange={(e) => setCustPhone(e.target.value)} placeholder="Contoh: 08123456789" className="w-full px-3 py-2 rounded-lg border border-[var(--paper-line)] text-sm" />
+              <input value={custPhone} onChange={(e) => setCustPhone(e.target.value)} placeholder="Contoh: 08123456789" className="w-full px-3 py-2 rounded-lg border border-[var(--paper-line)] bg-[var(--paper)] text-sm outline-none focus:border-[var(--gold)] transition-colors" />
             </div>
             <div className="flex gap-2">
               <button type="button" onClick={() => setShowAddCust(false)} className="flex-1 py-2 rounded-lg border border-[var(--paper-line)] text-sm text-[var(--ink-soft)]">
@@ -1501,20 +1628,20 @@ export default function HomePage() {
             <h2 className="font-ledger text-lg mb-3">Tambah hutang baru</h2>
             <div className="mb-3">
               <label className="block text-xs text-[var(--ink-soft)] mb-1 font-medium">Barang</label>
-              <input value={debtItemName} onChange={(e) => setDebtItemName(e.target.value)} placeholder="Contoh: Beras 5kg" className="w-full px-3 py-2 rounded-lg border border-[var(--paper-line)] text-sm" />
+              <input value={debtItemName} onChange={(e) => setDebtItemName(e.target.value)} placeholder="Contoh: Beras 5kg" className="w-full px-3 py-2 rounded-lg border border-[var(--paper-line)] bg-[var(--paper)] text-sm outline-none focus:border-[var(--gold)] transition-colors" />
             </div>
             <div className="mb-3">
               <label className="block text-xs text-[var(--ink-soft)] mb-1 font-medium">Qty (pcs)</label>
-              <input type="number" min="1" value={debtQty} onChange={(e) => setDebtQty(e.target.value)} className="w-full px-3 py-2 rounded-lg border border-[var(--paper-line)] text-sm" />
+              <input type="number" min="1" value={debtQty} onChange={(e) => setDebtQty(e.target.value)} className="w-full px-3 py-2 rounded-lg border border-[var(--paper-line)] bg-[var(--paper)] text-sm outline-none focus:border-[var(--gold)] transition-colors" />
             </div>
             <div className="mb-3">
               <label className="block text-xs text-[var(--ink-soft)] mb-1 font-medium">Harga total (Rp)</label>
-              <input type="number" min="0" value={debtAmount} onChange={(e) => setDebtAmount(e.target.value)} className="w-full px-3 py-2 rounded-lg border border-[var(--paper-line)] text-sm" />
+              <input type="number" min="0" value={debtAmount} onChange={(e) => setDebtAmount(e.target.value)} className="w-full px-3 py-2 rounded-lg border border-[var(--paper-line)] bg-[var(--paper)] text-sm outline-none focus:border-[var(--gold)] transition-colors" />
               {debtAmountError && <div className="text-xs text-[var(--red)] mt-1">Masukkan jumlah yang benar</div>}
             </div>
             <div className="mb-4">
               <label className="block text-xs text-[var(--ink-soft)] mb-1 font-medium">Tanggal</label>
-              <input type="date" value={debtDate} onChange={(e) => setDebtDate(e.target.value)} className="w-full px-3 py-2 rounded-lg border border-[var(--paper-line)] text-sm" />
+              <input type="date" value={debtDate} onChange={(e) => setDebtDate(e.target.value)} className="w-full px-3 py-2 rounded-lg border border-[var(--paper-line)] bg-[var(--paper)] text-sm outline-none focus:border-[var(--gold)] transition-colors" />
             </div>
             <div className="mb-4">
               <label className="block text-xs text-[var(--ink-soft)] mb-1 font-medium">Kasir (opsional)</label>
@@ -1533,7 +1660,7 @@ export default function HomePage() {
                 value={debtKasir}
                 onChange={(e) => setDebtKasir(e.target.value)}
                 placeholder="Atau ketik nama kasir"
-                className="w-full px-3 py-2 rounded-lg border border-[var(--paper-line)] text-sm"
+                className="w-full px-3 py-2 rounded-lg border border-[var(--paper-line)] bg-[var(--paper)] text-sm outline-none focus:border-[var(--gold)] transition-colors"
               />
             </div>
             <div className="flex gap-2">
@@ -1693,7 +1820,7 @@ export default function HomePage() {
                     min="0"
                     value={payAmount}
                     onChange={(e) => setPayAmount(e.target.value)}
-                    className="w-full px-3 py-2 rounded-lg border border-[var(--paper-line)] text-sm"
+                    className="w-full px-3 py-2 rounded-lg border border-[var(--paper-line)] bg-[var(--paper)] text-sm outline-none focus:border-[var(--gold)] transition-colors"
                   />
                   {payAmountError && (
                     <div className="text-xs text-[var(--red)] mt-1">
@@ -1733,7 +1860,7 @@ export default function HomePage() {
                   if (e.target.value.trim()) setReceiver("");
                 }}
                 placeholder="Atau ketik nama lain"
-                className="w-full px-3 py-2 rounded-lg border border-[var(--paper-line)] text-sm mt-2"
+                className="w-full px-3 py-2 rounded-lg border border-[var(--paper-line)] bg-[var(--paper)] text-sm mt-2 outline-none focus:border-[var(--gold)] transition-colors"
               />
               {receiverError && <div className="text-xs text-[var(--red)] mt-1">Pilih atau isi nama penerima</div>}
             </div>
@@ -1793,7 +1920,7 @@ export default function HomePage() {
                   if (e.target.value.trim()) setUseCreditReceiver("");
                 }}
                 placeholder="Atau ketik nama lain"
-                className="w-full px-3 py-2 rounded-lg border border-[var(--paper-line)] text-sm mt-2"
+                className="w-full px-3 py-2 rounded-lg border border-[var(--paper-line)] bg-[var(--paper)] text-sm mt-2 outline-none focus:border-[var(--gold)] transition-colors"
               />
               {useCreditReceiverError && <div className="text-xs text-[var(--red)] mt-1">Pilih atau isi nama yang memproses</div>}
             </div>
