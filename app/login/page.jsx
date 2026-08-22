@@ -61,15 +61,15 @@ export default function LoginPage() {
               className="absolute inset-0 m-auto w-24 h-24 rounded-full blur-2xl pointer-events-none"
               style={{ background: "var(--gold)", opacity: 0.22 }}
             />
-            <div className="relative w-14 h-14 rounded-2xl bg-[var(--ink)] flex items-center justify-center shadow-lg">
+            <div className="relative w-14 h-14 rounded-2xl bg-[var(--action-bg)] flex items-center justify-center shadow-lg">
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
                 <path
                   d="M6 4.5h11a1.5 1.5 0 0 1 1.5 1.5v14l-3-1.8-2.5 1.8-2.5-1.8-2.5 1.8-2-1.4V6a1.5 1.5 0 0 1 1.5-1.5Z"
-                  stroke="var(--gold)"
+                  stroke="var(--action-text)"
                   strokeWidth="1.6"
                   strokeLinejoin="round"
                 />
-                <path d="M8.5 8.5h7M8.5 12h7" stroke="var(--gold)" strokeWidth="1.6" strokeLinecap="round" />
+                <path d="M8.5 8.5h7M8.5 12h7" stroke="var(--action-text)" strokeWidth="1.6" strokeLinecap="round" />
               </svg>
             </div>
           </div>
@@ -103,7 +103,7 @@ export default function LoginPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="nama@email.com"
-                  className="w-full pl-11 pr-4 py-3 rounded-2xl text-sm outline-none border border-[var(--paper-line)] bg-[var(--paper)] transition-all duration-150 focus:border-[var(--gold)]"
+                  className="w-full pl-11 pr-4 py-3 rounded-2xl text-sm outline-none border border-[var(--paper-line)] bg-[var(--surface-soft)] transition-all duration-150 focus:border-[var(--gold)]"
                   style={{ color: "var(--ink)" }}
                   onFocus={(e) => (e.target.style.boxShadow = "0 0 0 4px color-mix(in srgb, var(--gold) 16%, transparent)")}
                   onBlur={(e) => (e.target.style.boxShadow = "none")}
@@ -132,7 +132,7 @@ export default function LoginPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full pl-11 pr-11 py-3 rounded-2xl text-sm outline-none border border-[var(--paper-line)] bg-[var(--paper)] transition-all duration-150 focus:border-[var(--gold)]"
+                  className="w-full pl-11 pr-11 py-3 rounded-2xl text-sm outline-none border border-[var(--paper-line)] bg-[var(--surface-soft)] transition-all duration-150 focus:border-[var(--gold)]"
                   style={{ color: "var(--ink)" }}
                   onFocus={(e) => (e.target.style.boxShadow = "0 0 0 4px color-mix(in srgb, var(--gold) 16%, transparent)")}
                   onBlur={(e) => (e.target.style.boxShadow = "none")}
@@ -168,7 +168,7 @@ export default function LoginPage() {
               disabled={loading}
               type="submit"
               className="w-full mt-6 py-3.5 rounded-2xl font-semibold text-sm transition-all duration-150 disabled:opacity-60 hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center gap-2 group"
-              style={{ background: "var(--ink)", color: "var(--paper)", boxShadow: "0 10px 25px -8px color-mix(in srgb, var(--ink) 45%, transparent)" }}
+              style={{ background: "var(--action-bg)", color: "var(--action-text)", boxShadow: "0 10px 25px -8px color-mix(in srgb, var(--action-bg) 45%, transparent)" }}
             >
               {loading ? (
                 "Masuk..."

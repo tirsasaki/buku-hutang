@@ -2,80 +2,61 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Kertas Klasik — tema bawaan, nuansa buku besar/ledger kertas krem hangat */
+/* Light Mode */
 :root,
-[data-theme="klasik"] {
-  --paper: #F6F0E1;
-  --paper-line: #E2D6BA;
-  --ink: #2E271E;
-  --ink-soft: #7C7263;
-  --red: #A5342E;
-  --red-soft: #EFDCD5;
-  --green: #2F6B4C;
-  --green-soft: #DCEADD;
-  --gold: #B07E2C;
-  --gold-soft: #F1E4C9;
-  --card: #FFFDF6;
+[data-theme="light"] {
+  --paper: #F7F8FA;
+  --card: #FFFFFF;
+  --surface-soft: #F0F2F5;
+  --paper-line: #DDE2E8;
+
+  --ink: #18202A;
+  --ink-soft: #5F6C7B;
+  --ink-faint: #8792A2;
+
+  --red: #B42318;
+  --red-soft: #FDE7E5;
+  --green: #067647;
+  --green-soft: #DDF5E9;
+  --gold: #896B2C;
+  --gold-soft: #F3EBD8;
+
+  --action-bg: #18202A;
+  --action-text: #FFFFFF;
+
+  --on-red: #FFFFFF;
+  --on-green: #FFFFFF;
+  --on-gold: #FFFFFF;
+
+  --overlay: rgba(15, 20, 27, 0.46);
 }
 
-/* Malam Biru — biru dongker gelap, tenang dan nyaman dipakai malam hari */
-[data-theme="malam"] {
-  --paper: #101521;
-  --paper-line: #1D2532;
-  --ink: #E4E9F2;
-  --ink-soft: #8996AC;
-  --red: #E8756B;
-  --red-soft: #35262A;
-  --green: #6FCF97;
-  --green-soft: #1D2E27;
-  --gold: #E4B872;
-  --gold-soft: #332A18;
-  --card: #161D2A;
-}
+/* Dark Mode */
+[data-theme="dark"] {
+  --paper: #0E131A;
+  --card: #161D26;
+  --surface-soft: #1D2632;
+  --paper-line: #2D3846;
 
-/* Hijau Zamrud — hijau hutan gelap, adem dan minim silau */
-[data-theme="zamrud"] {
-  --paper: #0E1712;
-  --paper-line: #1A251E;
-  --ink: #E3EDE6;
-  --ink-soft: #86A092;
-  --red: #E2776D;
-  --red-soft: #33221F;
-  --green: #5FBE8A;
-  --green-soft: #1B2E24;
-  --gold: #D9B26A;
-  --gold-soft: #2E2717;
-  --card: #131F19;
-}
+  --ink: #EEF2F6;
+  --ink-soft: #A6B0BF;
+  --ink-faint: #778394;
 
-/* Krem Lavender — pastel lembut & elegan, terang tapi tidak menyilaukan */
-[data-theme="lavender"] {
-  --paper: #F5F1F8;
-  --paper-line: #E2D9EC;
-  --ink: #362F45;
-  --ink-soft: #837B99;
-  --red: #C15C6B;
-  --red-soft: #F4DEE1;
-  --green: #4C8577;
-  --green-soft: #DCEBE6;
-  --gold: #A47DC4;
-  --gold-soft: #EBE1F2;
-  --card: #FFFDFF;
-}
+  --red: #FF8D85;
+  --red-soft: #3A2326;
+  --green: #67D8A0;
+  --green-soft: #18372A;
+  --gold: #E3C277;
+  --gold-soft: #342D1D;
 
-/* Kopi Senja — cokelat gelap hangat, cocok untuk mata yang gampang lelah */
-[data-theme="kopi"] {
-  --paper: #16100C;
-  --paper-line: #241B14;
-  --ink: #EFE3D6;
-  --ink-soft: #A0907D;
-  --red: #E08D6E;
-  --red-soft: #3A241C;
-  --green: #9BBE6F;
-  --green-soft: #2A2F1D;
-  --gold: #D9A24B;
-  --gold-soft: #33270F;
-  --card: #1D1610;
+  --action-bg: #EEF2F6;
+  --action-text: #0E131A;
+
+  --on-red: #241012;
+  --on-green: #0C1B14;
+  --on-gold: #211B0E;
+
+  --overlay: rgba(0, 0, 0, 0.68);
 }
 
 body {
@@ -83,7 +64,27 @@ body {
   color: var(--ink);
   font-family: "Plus Jakarta Sans", sans-serif;
   min-height: 100vh;
-  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+body,
+input,
+select,
+textarea,
+button,
+.app-header {
+  transition:
+    background-color 180ms ease,
+    border-color 180ms ease,
+    color 180ms ease,
+    box-shadow 180ms ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
 }
 
 /* Tekstur latar "sobekan catatan" — ikon nota/kertas kecil yang diulang sangat
@@ -220,15 +221,6 @@ body::before {
   transform-origin: 80px 80px;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .animate-slide-left,
-  .animate-slide-right,
-  .animate-stamp,
-  .stamp-ring {
-    animation: none !important;
-  }
-}
-
 /* ===== Login modern-minimalis ===== */
 
 @keyframes riseIn {
@@ -269,11 +261,4 @@ body::before {
 .field-pill:focus-within {
   border-color: var(--gold);
   box-shadow: 0 0 0 4px color-mix(in srgb, var(--gold) 18%, transparent);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .animate-rise,
-  .animate-blob {
-    animation: none !important;
-  }
 }

@@ -21,18 +21,50 @@ export const metadata = {
 };
 
 export const viewport = {
-  themeColor: "#2B3345",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#F7F8FA" },
+    { media: "(prefers-color-scheme: dark)", color: "#0E131A" },
+  ],
 };
+
+// Skrip inisialisasi tema: dijalankan sebelum halaman terlihat agar tidak
+// ada kedipan (flash) antara Light dan Dark Mode. Juga memigrasikan nilai
+// tema lama (5-tema) yang mungkin masih tersimpan di perangkat pengguna.
+const themeInitScript = `
+(function () {
+  try {
+    var STORAGE_KEY = "buku-hutang-theme";
+    var LIGHT_ALIASES = ["klasik", "lavender"];
+    var DARK_ALIASES = ["malam", "zamrud", "kopi"];
+    var raw = localStorage.getItem(STORAGE_KEY);
+    var resolved = null;
+    if (raw === "light" || raw === "dark") {
+      resolved = raw;
+    } else if (LIGHT_ALIASES.indexOf(raw) !== -1) {
+      resolved = "light";
+    } else if (DARK_ALIASES.indexOf(raw) !== -1) {
+      resolved = "dark";
+    } else {
+      resolved = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    }
+    document.documentElement.setAttribute("data-theme", resolved);
+    localStorage.setItem(STORAGE_KEY, resolved);
+  } catch (e) {
+    document.documentElement.setAttribute("data-theme", "light");
+  }
+})();
+`;
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="id">
+    <html lang="id" suppressHydrationWarning>
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link
           href="https://fonts.googleapis.com/css2?family=Special+Elite&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap"
           rel="stylesheet"
         />
+        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       </head>
       <body>
         {children}

@@ -78,7 +78,7 @@ export default function SignupPage() {
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full px-3 py-2 rounded-lg border border-[var(--paper-line)] bg-[var(--paper)] text-sm outline-none focus:border-[var(--gold)]"
+            className="w-full px-3 py-2 rounded-lg border border-[var(--paper-line)] bg-[var(--surface-soft)] text-sm outline-none focus:border-[var(--gold)]"
           />
         </div>
         <div className="mb-4">
@@ -88,7 +88,7 @@ export default function SignupPage() {
             required
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full px-3 py-2 rounded-lg border border-[var(--paper-line)] bg-[var(--paper)] text-sm outline-none focus:border-[var(--gold)]"
+            className="w-full px-3 py-2 rounded-lg border border-[var(--paper-line)] bg-[var(--surface-soft)] text-sm outline-none focus:border-[var(--gold)]"
           />
           <p className="text-[11px] text-[var(--ink-soft)] mt-1">Minimal 6 karakter</p>
         </div>
@@ -98,7 +98,7 @@ export default function SignupPage() {
         <button
           disabled={loading}
           type="submit"
-          className="w-full py-2.5 rounded-lg bg-[var(--ink)] text-[var(--paper)] font-semibold text-sm disabled:opacity-60"
+          className="w-full py-2.5 rounded-lg bg-[var(--action-bg)] text-[var(--action-text)] font-semibold text-sm disabled:opacity-60"
         >
           {loading ? "Mendaftar..." : "Daftar"}
         </button>
