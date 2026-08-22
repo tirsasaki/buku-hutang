@@ -591,7 +591,10 @@ export default function HomePage() {
   // font monospace (tampilan seperti struk cetak asli). Semua produk yang
   // belum dibayar tetap ditampilkan, tapi nomor invoice yang dicantumkan
   // cukup 1 saja (yang paling lama) supaya tidak membingungkan.
-  function buildWaMessage(cust) {
+  // buildReceiptBody menghasilkan teks struk polos (tanpa pembungkus khusus
+  // WhatsApp) sehingga bisa dipakai ulang untuk Web Share API, salin teks,
+  // maupun format lain di luar WhatsApp.
+  function buildReceiptBody(cust) {
     const unpaidItems = debtItems
       .filter((i) => i.customer_id === cust.id && remainingOf(i) > 0)
       .slice()
@@ -621,7 +624,7 @@ export default function HomePage() {
 
     const total = unpaidItems.reduce((s, it) => s + remainingOf(it), 0);
 
-    const body =
+    return (
       "STRUK TAGIHAN\n" +
       doubleLine + "\n" +
       "INV  : " + oldestInvoiceNo + "\n" +
@@ -632,8 +635,16 @@ export default function HomePage() {
       divider + "\n" +
       padRight("TOTAL", formatRupiah(total)) + "\n" +
       "STATUS: BELUM LUNAS\n" +
-      doubleLine;
+      doubleLine
+    );
+  }
 
+  // Dibungkus ``` agar WhatsApp merendernya sebagai font monospace (tampilan
+  // seperti struk cetak asli). Khusus dipakai untuk link wa.me karena hanya
+  // WhatsApp yang mendukung format ini.
+  function buildWaMessage(cust) {
+    const body = buildReceiptBody(cust);
+    if (!body) return null;
     return "```\n" + body + "\n```";
   }
 
@@ -649,6 +660,50 @@ export default function HomePage() {
         ? "https://wa.me/" + normalizePhone(cust.phone) + "?text=" + encoded
         : "https://api.whatsapp.com/send?text=" + encoded;
     window.open(url, "_blank");
+  }
+
+  // handleShare membuka menu share bawaan HP (Web Share API) sehingga
+  // pengguna bisa memilih WhatsApp, Instagram, Telegram, SMS, Email, atau
+  // aplikasi lain yang terpasang. Kalau browser tidak mendukung (mis. di
+  // desktop), otomatis fallback ke link WhatsApp seperti sebelumnya.
+  async function handleShare(cust) {
+    const body = buildReceiptBody(cust);
+    if (!body) {
+      alert("Pelanggan ini tidak memiliki hutang aktif untuk dibagikan.");
+      return;
+    }
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: "Struk Tagihan - " + (cust.name || ""),
+          text: body,
+        });
+      } catch (err) {
+        // AbortError = pengguna membatalkan share, tidak perlu fallback
+        if (err && err.name !== "AbortError") {
+          handleShareWa(cust);
+        }
+      }
+    } else {
+      // Browser tanpa dukungan Web Share API (umumnya desktop)
+      handleShareWa(cust);
+    }
+  }
+
+  // handleCopyText menyalin teks struk ke clipboard, berguna untuk ditempel
+  // manual ke aplikasi apa pun (medsos, catatan, email, dll).
+  async function handleCopyText(cust) {
+    const body = buildReceiptBody(cust);
+    if (!body) {
+      alert("Pelanggan ini tidak memiliki hutang aktif untuk dibagikan.");
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(body);
+      alert("Teks tagihan berhasil disalin.");
+    } catch (err) {
+      alert("Gagal menyalin teks. Coba lagi.");
+    }
   }
 
   if (checkingAuth || loading) {
@@ -1425,12 +1480,38 @@ export default function HomePage() {
             </div>
           </div>
 
-          <div className="flex gap-2.5 mb-4">
+          <div className="flex gap-2.5 mb-2.5">
             <button
-              onClick={() => handleShareWa(selectedCustomer)}
+              onClick={() => handleShare(selectedCustomer)}
               className="flex-1 flex items-center justify-center gap-1.5 py-3 rounded-2xl bg-[var(--card)] border border-[var(--paper-line)] text-sm font-medium text-[var(--ink)] shadow-sm hover:shadow active:scale-[0.98] transition-all duration-200"
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                <circle cx="18" cy="5" r="2.6" stroke="currentColor" strokeWidth="1.6" />
+                <circle cx="6" cy="12" r="2.6" stroke="currentColor" strokeWidth="1.6" />
+                <circle cx="18" cy="19" r="2.6" stroke="currentColor" strokeWidth="1.6" />
+                <path d="M8.3 10.7 15.7 6.3M8.3 13.3l7.4 4.4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+              </svg>
+              Bagikan Tagihan
+            </button>
+            <button
+              onClick={() => handleCopyText(selectedCustomer)}
+              title="Salin teks"
+              aria-label="Salin teks tagihan"
+              className="flex-none w-12 flex items-center justify-center rounded-2xl bg-[var(--card)] border border-[var(--paper-line)] text-[var(--ink)] shadow-sm hover:shadow active:scale-[0.98] transition-all duration-200"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                <rect x="8.5" y="8.5" width="11" height="11" rx="2" stroke="currentColor" strokeWidth="1.6" />
+                <path d="M5.5 15.5h-1a2 2 0 0 1-2-2v-9a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" stroke="currentColor" strokeWidth="1.6" />
+              </svg>
+            </button>
+          </div>
+
+          <div className="flex gap-2.5 mb-4">
+            <button
+              onClick={() => handleShareWa(selectedCustomer)}
+              className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-2xl bg-[var(--green-soft)]/60 border border-transparent text-[var(--green)] text-xs font-medium hover:brightness-[0.97] active:scale-[0.98] transition-all duration-200"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
                 <path
                   d="M17.6 6.3A8.4 8.4 0 0 0 3.9 15.9L3 21l5.2-1.4A8.4 8.4 0 1 0 17.6 6.3Z"
                   stroke="var(--green)"
@@ -1439,13 +1520,13 @@ export default function HomePage() {
                 />
                 <path d="M8.5 9.7c.3 2.6 2.5 4.7 5.1 5" stroke="var(--green)" strokeWidth="1.6" strokeLinecap="round" />
               </svg>
-              Bagikan ke WhatsApp
+              Langsung ke WhatsApp
             </button>
             <button
               onClick={openBulkLunasModal}
-              className="flex-1 flex items-center justify-center gap-1.5 py-3 rounded-2xl bg-[var(--green-soft)] border border-transparent text-[var(--green)] text-sm font-semibold shadow-sm hover:brightness-[0.97] active:scale-[0.98] transition-all duration-200"
+              className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-2xl bg-[var(--green-soft)] border border-transparent text-[var(--green)] text-xs font-semibold hover:brightness-[0.97] active:scale-[0.98] transition-all duration-200"
             >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
                 <path d="M20 6 9 17l-5-5" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
               Tandai semua lunas
