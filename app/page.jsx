@@ -271,7 +271,7 @@ export default function HomePage() {
   function openPayModal(item, mode) {
     setPayTarget(item);
     setPayMode(mode);
-    setPayAmount("");
+    setPayAmount(mode === "lunas" ? String(Math.round(remainingOf(item))) : "");
     setReceiver("");
     setReceiverOther("");
     setPayAmountError(false);
@@ -284,9 +284,10 @@ export default function HomePage() {
       alert("Pelanggan ini tidak memiliki hutang aktif.");
       return;
     }
+    const total = items.reduce((s, i) => s + remainingOf(i), 0);
     setPayTarget("ALL");
     setPayMode("lunas");
-    setPayAmount("");
+    setPayAmount(String(Math.round(total)));
     setReceiver("");
     setReceiverOther("");
     setPayAmountError(false);
@@ -299,9 +300,10 @@ export default function HomePage() {
       alert("Transaksi ini sudah lunas semua.");
       return;
     }
+    const total = activeItems.reduce((s, i) => s + remainingOf(i), 0);
     setPayTarget(activeItems);
     setPayMode("lunas");
-    setPayAmount("");
+    setPayAmount(String(Math.round(total)));
     setReceiver("");
     setReceiverOther("");
     setPayAmountError(false);
@@ -324,15 +326,40 @@ export default function HomePage() {
         payTarget === "ALL"
           ? debtItems.filter((i) => i.customer_id === selectedCustomerId && remainingOf(i) > 0)
           : payTarget.filter((i) => remainingOf(i) > 0);
+      const totalRemaining = items.reduce((s, i) => s + remainingOf(i), 0);
+
+      const amount = parseFloat(payAmount);
+      if (!amount || amount <= 0 || isNaN(amount) || amount < totalRemaining) {
+        setPayAmountError(true);
+        return;
+      }
+      setPayAmountError(false);
+
       const rows = items.map((it) => ({
         debt_item_id: it.id,
         amount: remainingOf(it),
         received_by: finalReceiver,
       }));
       await supabase.from("payments").insert(rows);
+
+      const overpay = amount - totalRemaining;
+      if (overpay > 0) {
+        await supabase.from("credit_transactions").insert({
+          customer_id: selectedCustomerId,
+          amount: overpay,
+          note: "Kelebihan bayar - tandai lunas",
+        });
+      }
+
       setPayTarget(null);
       setDetailGroupKey(null);
       fetchAll();
+
+      if (overpay > 0) {
+        alert(
+          `Uang diterima melebihi total tagihan sebesar ${formatRupiah(overpay)}. Kelebihannya sudah disimpan sebagai saldo lebih pelanggan ini, dan bisa dipakai untuk pembayaran berikutnya.`
+        );
+      }
       return;
     }
 
@@ -340,18 +367,17 @@ export default function HomePage() {
     let amount;
     let valid = true;
 
-    if (payMode === "lunas") {
-      amount = remaining;
+    amount = parseFloat(payAmount);
+    if (!amount || amount <= 0 || isNaN(amount)) {
+      setPayAmountError(true);
+      valid = false;
+    } else if (payMode === "lunas" && amount < remaining) {
+      // Mode "lunas" wajib menutup penuh sisa hutang; kalau kurang dari itu,
+      // pakai tombol "Bayar sebagian" saja.
+      setPayAmountError(true);
+      valid = false;
     } else {
-      amount = parseFloat(payAmount);
-      // Boleh melebihi sisa hutang barang ini — kelebihannya nanti
-      // otomatis disimpan sebagai saldo lebih pelanggan.
-      if (!amount || amount <= 0 || isNaN(amount)) {
-        setPayAmountError(true);
-        valid = false;
-      } else {
-        setPayAmountError(false);
-      }
+      setPayAmountError(false);
     }
     if (!valid) return;
 
@@ -1620,7 +1646,7 @@ export default function HomePage() {
       {payTarget && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-5 z-50">
           <form onSubmit={handleConfirmPay} className="bg-[var(--card)] rounded-2xl p-5 w-full max-w-sm">
-            <h2 className="font-ledger text-lg mb-1">{payTarget === "ALL" || Array.isArray(payTarget) ? "Tandai semua lunas" : payMode === "lunas" ? "Tandai lunas" : "Bayar sebagian"}</h2>
+            <h2 className="font-ledger text-lg mb-1">{payTarget === "ALL" || Array.isArray(payTarget) ? "Tandai lunas" : payMode === "lunas" ? "Tandai lunas" : "Bayar sebagian"}</h2>
             <p className="text-xs text-[var(--ink-soft)] mb-3">
               {payTarget === "ALL" || Array.isArray(payTarget) ? (
                 (() => {
@@ -1629,7 +1655,7 @@ export default function HomePage() {
                       ? debtItems.filter((i) => i.customer_id === selectedCustomerId && remainingOf(i) > 0)
                       : payTarget.filter((i) => remainingOf(i) > 0);
                   const total = items.reduce((s, i) => s + remainingOf(i), 0);
-                  return `${items.length} barang, total ${formatRupiah(total)}. Semua akan ditandai lunas penuh.`;
+                  return `${items.length} barang, total tagihan ${formatRupiah(total)}. Semua akan ditandai lunas penuh.`;
                 })()
               ) : (
                 <>
@@ -1643,25 +1669,47 @@ export default function HomePage() {
                 Pelanggan ini punya saldo lebih {formatRupiah(creditBalanceForCustomer(selectedCustomerId))}. Tutup form ini lalu tekan &ldquo;Pakai saldo lebih&rdquo; di halaman pelanggan untuk memakainya.
               </div>
             )}
-            {payMode !== "lunas" && (
-              <div className="mb-3">
-                <label className="block text-xs text-[var(--ink-soft)] mb-1 font-medium">Jumlah dibayar (Rp)</label>
-                <input type="number" min="0" value={payAmount} onChange={(e) => setPayAmount(e.target.value)} className="w-full px-3 py-2 rounded-lg border border-[var(--paper-line)] text-sm" />
-                {payAmountError && <div className="text-xs text-[var(--red)] mt-1">Masukkan jumlah pembayaran yang benar</div>}
-                {(() => {
-                  const amt = parseFloat(payAmount);
-                  const rem = remainingOf(payTarget);
-                  if (!isNaN(amt) && amt > rem && rem > 0) {
-                    return (
-                      <div className="text-xs text-[var(--gold)] mt-1">
-                        Kelebihan {formatRupiah(amt - rem)} akan disimpan sebagai saldo lebih.
-                      </div>
-                    );
-                  }
-                  return null;
-                })()}
-              </div>
-            )}
+            {(() => {
+              const isGroup = payTarget === "ALL" || Array.isArray(payTarget);
+              const groupItems = isGroup
+                ? payTarget === "ALL"
+                  ? debtItems.filter((i) => i.customer_id === selectedCustomerId && remainingOf(i) > 0)
+                  : payTarget.filter((i) => remainingOf(i) > 0)
+                : null;
+              const minRequired = isGroup
+                ? groupItems.reduce((s, i) => s + remainingOf(i), 0)
+                : payMode === "lunas"
+                ? remainingOf(payTarget)
+                : 0;
+              const amt = parseFloat(payAmount);
+              const overpay = !isNaN(amt) && amt > minRequired ? amt - minRequired : 0;
+              return (
+                <div className="mb-3">
+                  <label className="block text-xs text-[var(--ink-soft)] mb-1 font-medium">
+                    {isGroup || payMode === "lunas" ? "Uang diterima (Rp)" : "Jumlah dibayar (Rp)"}
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={payAmount}
+                    onChange={(e) => setPayAmount(e.target.value)}
+                    className="w-full px-3 py-2 rounded-lg border border-[var(--paper-line)] text-sm"
+                  />
+                  {payAmountError && (
+                    <div className="text-xs text-[var(--red)] mt-1">
+                      {isGroup || payMode === "lunas"
+                        ? `Untuk menandai lunas, jumlah minimal ${formatRupiah(minRequired)}. Untuk bayar kurang dari itu, gunakan "Bayar sebagian".`
+                        : "Masukkan jumlah pembayaran yang benar"}
+                    </div>
+                  )}
+                  {overpay > 0 && (
+                    <div className="text-xs text-[var(--gold)] mt-1">
+                      Kelebihan {formatRupiah(overpay)} akan disimpan sebagai saldo lebih.
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
             <div className="mb-4">
               <label className="block text-xs text-[var(--ink-soft)] mb-1 font-medium">Siapa yang menerima uangnya?</label>
               <div className="flex gap-2 flex-wrap mt-1">
