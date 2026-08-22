@@ -193,7 +193,7 @@ export default function HomePage() {
     setDebtAmount("");
     setDebtKasir("");
     setShowAddDebt(false);
-    fetchAll();
+    fetchAll(); 
   }
 
   function resetKasirForm() {
@@ -650,15 +650,15 @@ export default function HomePage() {
         <>
           <div className="flex items-center justify-between mb-5 gap-3">
             <div className="flex items-center gap-3 min-w-0">
-              <div className="w-11 h-11 rounded-2xl bg-[var(--action-bg)] flex items-center justify-center shrink-0 shadow-sm">
+              <div className="w-11 h-11 rounded-2xl bg-[var(--ink)] flex items-center justify-center shrink-0 shadow-sm">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
                   <path
                     d="M6 4.5h11a1.5 1.5 0 0 1 1.5 1.5v14l-3-1.8-2.5 1.8-2.5-1.8-2.5 1.8-2-1.4V6a1.5 1.5 0 0 1 1.5-1.5Z"
-                    stroke="var(--action-text)"
+                    stroke="var(--gold)"
                     strokeWidth="1.6"
                     strokeLinejoin="round"
                   />
-                  <path d="M8.5 8.5h7M8.5 12h7" stroke="var(--action-text)" strokeWidth="1.6" strokeLinecap="round" />
+                  <path d="M8.5 8.5h7M8.5 12h7" stroke="var(--gold)" strokeWidth="1.6" strokeLinecap="round" />
                 </svg>
               </div>
               <div className="min-w-0">
@@ -741,13 +741,13 @@ export default function HomePage() {
 
           <div className="relative flex bg-[var(--card)] border border-[var(--paper-line)] rounded-full p-1 mb-5 text-sm font-semibold">
             <div
-              className="absolute top-1 bottom-1 w-[calc(50%-4px)] rounded-full bg-[var(--action-bg)] shadow-sm transition-transform duration-300 ease-out"
+              className="absolute top-1 bottom-1 w-[calc(50%-4px)] rounded-full bg-[var(--ink)] shadow-sm transition-transform duration-300 ease-out"
               style={{ transform: homeTab === "kasir" ? "translateX(0%)" : "translateX(calc(100% + 8px))" }}
             />
             <div
               onClick={() => setHomeTab("kasir")}
               className={`relative z-10 flex-1 flex items-center justify-center gap-1.5 text-center py-2 rounded-full cursor-pointer select-none transition-colors duration-200 ${
-                homeTab === "kasir" ? "text-[var(--action-text)]" : "text-[var(--ink-soft)]"
+                homeTab === "kasir" ? "text-[var(--paper)]" : "text-[var(--ink-soft)]"
               }`}
             >
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
@@ -764,7 +764,7 @@ export default function HomePage() {
             <div
               onClick={() => setHomeTab("pelanggan")}
               className={`relative z-10 flex-1 flex items-center justify-center gap-1.5 text-center py-2 rounded-full cursor-pointer select-none transition-colors duration-200 ${
-                homeTab === "pelanggan" ? "text-[var(--action-text)]" : "text-[var(--ink-soft)]"
+                homeTab === "pelanggan" ? "text-[var(--paper)]" : "text-[var(--ink-soft)]"
               }`}
             >
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
@@ -841,7 +841,7 @@ export default function HomePage() {
                           key={name}
                           onClick={() => setBulkKasir(name)}
                           className={`px-3 py-1.5 rounded-full border text-xs cursor-pointer transition-colors ${
-                            bulkKasir === name ? "bg-[var(--gold)] border-[var(--gold)] text-[var(--on-gold)]" : "border-[var(--paper-line)] text-[var(--ink-soft)]"
+                            bulkKasir === name ? "bg-[var(--gold)] border-[var(--gold)] text-white" : "border-[var(--paper-line)] text-[var(--ink-soft)]"
                           }`}
                         >
                           {name}
@@ -867,7 +867,7 @@ export default function HomePage() {
                     <div key={idx} className="bg-[var(--card)] border border-[var(--paper-line)] rounded-2xl shadow-sm p-3.5">
                       <div className="flex items-center justify-between mb-2.5">
                         <div className="flex items-center gap-2">
-                          <span className="w-5 h-5 rounded-full bg-[var(--gold)] text-[var(--on-gold)] text-[10px] font-bold flex items-center justify-center shrink-0">
+                          <span className="w-5 h-5 rounded-full bg-[var(--gold)] text-white text-[10px] font-bold flex items-center justify-center shrink-0">
                             {idx + 1}
                           </span>
                           <span className="text-xs font-semibold text-[var(--ink-soft)]">Barang</span>
@@ -938,7 +938,7 @@ export default function HomePage() {
                   </span>
                 </div>
 
-                <button type="submit" className="w-full py-3 rounded-xl bg-[var(--green)] text-[var(--on-green)] text-sm font-semibold shadow-sm active:scale-[0.99] transition-transform">
+                <button type="submit" className="w-full py-3 rounded-xl bg-[var(--green)] text-white text-sm font-semibold shadow-sm active:scale-[0.99] transition-transform">
                   Simpan transaksi
                 </button>
               </form>
@@ -1022,7 +1022,7 @@ export default function HomePage() {
                     key={f.id}
                     onClick={() => setStatusFilter(f.id)}
                     className={`px-3 py-1.5 rounded-full border text-xs font-medium cursor-pointer select-none transition-colors ${
-                      statusFilter === f.id ? "bg-[var(--action-bg)] border-[var(--action-bg)] text-[var(--action-text)]" : "border-[var(--paper-line)] text-[var(--ink-soft)] hover:border-[var(--gold)]"
+                      statusFilter === f.id ? "bg-[var(--ink)] border-[var(--ink)] text-[var(--paper)]" : "border-[var(--paper-line)] text-[var(--ink-soft)] hover:border-[var(--gold)]"
                     }`}
                   >
                     {f.label}
@@ -1119,7 +1119,7 @@ export default function HomePage() {
             <button
               onClick={() => setShowAddCust((v) => !v)}
               title={showAddCust ? "Tutup" : "Tambah pelanggan baru"}
-              className="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-[var(--action-bg)] text-[var(--action-text)] shadow-lg flex items-center justify-center z-30 active:scale-90 transition-transform duration-200"
+              className="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-[var(--ink)] text-[var(--paper)] shadow-lg flex items-center justify-center z-30 active:scale-90 transition-transform duration-200"
             >
               <svg
                 width="22"
@@ -1207,22 +1207,20 @@ export default function HomePage() {
 
           <div className="relative flex bg-[var(--card)] border border-[var(--paper-line)] rounded-xl p-1 mb-3.5 text-sm font-medium">
             <div
-              className="absolute top-1 bottom-1 w-[calc(50%-4px)] rounded-lg bg-[var(--action-bg)] shadow-sm transition-transform duration-300 ease-out"
+              className="absolute top-1 bottom-1 w-[calc(50%-4px)] rounded-lg bg-[var(--ink)] shadow-sm transition-transform duration-300 ease-out"
               style={{ transform: activeTab === "berjalan" ? "translateX(0%)" : "translateX(calc(100% + 8px))" }}
             />
             <div
               onClick={() => setActiveTab("berjalan")}
               className={`relative z-10 flex-1 flex items-center justify-center gap-1.5 text-center py-2.5 rounded-lg cursor-pointer select-none transition-colors duration-200 ${
-                activeTab === "berjalan" ? "text-[var(--action-text)]" : "text-[var(--ink-soft)]"
+                activeTab === "berjalan" ? "text-[var(--paper)]" : "text-[var(--ink-soft)]"
               }`}
             >
               Berjalan
               {ongoingItems.length > 0 && (
                 <span
                   className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
-                    activeTab === "berjalan"
-                      ? "bg-[color-mix(in_srgb,var(--action-text)_20%,transparent)] text-[var(--action-text)]"
-                      : "bg-[var(--red-soft)] text-[var(--red)]"
+                    activeTab === "berjalan" ? "bg-white/20 text-[var(--paper)]" : "bg-[var(--red-soft)] text-[var(--red)]"
                   }`}
                 >
                   {ongoingItems.length}
@@ -1232,16 +1230,14 @@ export default function HomePage() {
             <div
               onClick={() => setActiveTab("selesai")}
               className={`relative z-10 flex-1 flex items-center justify-center gap-1.5 text-center py-2.5 rounded-lg cursor-pointer select-none transition-colors duration-200 ${
-                activeTab === "selesai" ? "text-[var(--action-text)]" : "text-[var(--ink-soft)]"
+                activeTab === "selesai" ? "text-[var(--paper)]" : "text-[var(--ink-soft)]"
               }`}
             >
               Selesai
               {doneItems.length > 0 && (
                 <span
                   className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
-                    activeTab === "selesai"
-                      ? "bg-[color-mix(in_srgb,var(--action-text)_20%,transparent)] text-[var(--action-text)]"
-                      : "bg-[var(--green-soft)] text-[var(--green)]"
+                    activeTab === "selesai" ? "bg-white/20 text-[var(--paper)]" : "bg-[var(--green-soft)] text-[var(--green)]"
                   }`}
                 >
                   {doneItems.length}
@@ -1396,7 +1392,7 @@ export default function HomePage() {
               setShowAddDebt(true);
             }}
             title="Tambah hutang baru"
-            className="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-[var(--action-bg)] text-[var(--action-text)] shadow-lg flex items-center justify-center z-30 active:scale-90 transition-transform duration-200"
+            className="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-[var(--ink)] text-[var(--paper)] shadow-lg flex items-center justify-center z-30 active:scale-90 transition-transform duration-200"
           >
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
               <line x1="12" y1="4" x2="12" y2="20" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
@@ -1415,7 +1411,7 @@ export default function HomePage() {
 
       {/* Modal: Konfirmasi keluar */}
       {showSignOutConfirm && (
-        <div className="fixed inset-0 bg-[var(--overlay)] flex items-center justify-center p-5 z-50">
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-5 z-50">
           <div className="bg-[var(--card)] rounded-2xl p-5 w-full max-w-sm shadow-xl">
             <div className="w-11 h-11 rounded-full bg-[var(--red-soft)] flex items-center justify-center mb-3">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
@@ -1437,7 +1433,7 @@ export default function HomePage() {
               <button
                 type="button"
                 onClick={handleSignOut}
-                className="flex-1 py-2 rounded-lg bg-[var(--red)] text-[var(--on-red)] text-sm font-medium"
+                className="flex-1 py-2 rounded-lg bg-[var(--red)] text-white text-sm font-medium"
               >
                 Ya, keluar
               </button>
@@ -1448,7 +1444,7 @@ export default function HomePage() {
 
       {/* Modal: Edit nomor WA */}
       {showEditPhone && (
-        <div className="fixed inset-0 bg-[var(--overlay)] flex items-center justify-center p-5 z-50">
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-5 z-50">
           <form onSubmit={handleSavePhone} className="bg-[var(--card)] rounded-2xl p-5 w-full max-w-sm">
             <h2 className="font-ledger text-lg mb-3">No. WhatsApp pelanggan</h2>
             <div className="mb-4">
@@ -1457,14 +1453,14 @@ export default function HomePage() {
                 value={editPhoneValue}
                 onChange={(e) => setEditPhoneValue(e.target.value)}
                 placeholder="Contoh: 08123456789"
-                className="w-full px-3 py-2 rounded-lg border border-[var(--paper-line)] bg-[var(--surface-soft)] text-[var(--ink)] text-sm"
+                className="w-full px-3 py-2 rounded-lg border border-[var(--paper-line)] text-sm"
               />
             </div>
             <div className="flex gap-2">
               <button type="button" onClick={() => setShowEditPhone(false)} className="flex-1 py-2 rounded-lg border border-[var(--paper-line)] text-sm text-[var(--ink-soft)]">
                 Batal
               </button>
-              <button type="submit" className="flex-1 py-2 rounded-lg bg-[var(--green)] text-[var(--on-green)] text-sm font-medium">
+              <button type="submit" className="flex-1 py-2 rounded-lg bg-[var(--green)] text-white text-sm font-medium">
                 Simpan
               </button>
             </div>
@@ -1474,23 +1470,23 @@ export default function HomePage() {
 
       {/* Modal: Tambah pelanggan */}
       {showAddCust && (
-        <div className="fixed inset-0 bg-[var(--overlay)] flex items-center justify-center p-5 z-50">
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-5 z-50">
           <form onSubmit={handleAddCustomer} className="bg-[var(--card)] rounded-2xl p-5 w-full max-w-sm">
             <h2 className="font-ledger text-lg mb-3">Pelanggan baru</h2>
             <div className="mb-3">
               <label className="block text-xs text-[var(--ink-soft)] mb-1 font-medium">Nama pelanggan</label>
-              <input value={custName} onChange={(e) => setCustName(e.target.value)} className="w-full px-3 py-2 rounded-lg border border-[var(--paper-line)] bg-[var(--surface-soft)] text-[var(--ink)] text-sm" />
+              <input value={custName} onChange={(e) => setCustName(e.target.value)} className="w-full px-3 py-2 rounded-lg border border-[var(--paper-line)] text-sm" />
               {custNameError && <div className="text-xs text-[var(--red)] mt-1">Nama wajib diisi</div>}
             </div>
             <div className="mb-4">
               <label className="block text-xs text-[var(--ink-soft)] mb-1 font-medium">No. WhatsApp (opsional)</label>
-              <input value={custPhone} onChange={(e) => setCustPhone(e.target.value)} placeholder="Contoh: 08123456789" className="w-full px-3 py-2 rounded-lg border border-[var(--paper-line)] bg-[var(--surface-soft)] text-[var(--ink)] text-sm" />
+              <input value={custPhone} onChange={(e) => setCustPhone(e.target.value)} placeholder="Contoh: 08123456789" className="w-full px-3 py-2 rounded-lg border border-[var(--paper-line)] text-sm" />
             </div>
             <div className="flex gap-2">
               <button type="button" onClick={() => setShowAddCust(false)} className="flex-1 py-2 rounded-lg border border-[var(--paper-line)] text-sm text-[var(--ink-soft)]">
                 Batal
               </button>
-              <button type="submit" className="flex-1 py-2 rounded-lg bg-[var(--green)] text-[var(--on-green)] text-sm font-medium">
+              <button type="submit" className="flex-1 py-2 rounded-lg bg-[var(--green)] text-white text-sm font-medium">
                 Simpan
               </button>
             </div>
@@ -1500,25 +1496,25 @@ export default function HomePage() {
 
       {/* Modal: Tambah hutang */}
       {showAddDebt && (
-        <div className="fixed inset-0 bg-[var(--overlay)] flex items-center justify-center p-5 z-50">
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-5 z-50">
           <form onSubmit={handleAddDebt} className="bg-[var(--card)] rounded-2xl p-5 w-full max-w-sm">
             <h2 className="font-ledger text-lg mb-3">Tambah hutang baru</h2>
             <div className="mb-3">
               <label className="block text-xs text-[var(--ink-soft)] mb-1 font-medium">Barang</label>
-              <input value={debtItemName} onChange={(e) => setDebtItemName(e.target.value)} placeholder="Contoh: Beras 5kg" className="w-full px-3 py-2 rounded-lg border border-[var(--paper-line)] bg-[var(--surface-soft)] text-[var(--ink)] text-sm" />
+              <input value={debtItemName} onChange={(e) => setDebtItemName(e.target.value)} placeholder="Contoh: Beras 5kg" className="w-full px-3 py-2 rounded-lg border border-[var(--paper-line)] text-sm" />
             </div>
             <div className="mb-3">
               <label className="block text-xs text-[var(--ink-soft)] mb-1 font-medium">Qty (pcs)</label>
-              <input type="number" min="1" value={debtQty} onChange={(e) => setDebtQty(e.target.value)} className="w-full px-3 py-2 rounded-lg border border-[var(--paper-line)] bg-[var(--surface-soft)] text-[var(--ink)] text-sm" />
+              <input type="number" min="1" value={debtQty} onChange={(e) => setDebtQty(e.target.value)} className="w-full px-3 py-2 rounded-lg border border-[var(--paper-line)] text-sm" />
             </div>
             <div className="mb-3">
               <label className="block text-xs text-[var(--ink-soft)] mb-1 font-medium">Harga total (Rp)</label>
-              <input type="number" min="0" value={debtAmount} onChange={(e) => setDebtAmount(e.target.value)} className="w-full px-3 py-2 rounded-lg border border-[var(--paper-line)] bg-[var(--surface-soft)] text-[var(--ink)] text-sm" />
+              <input type="number" min="0" value={debtAmount} onChange={(e) => setDebtAmount(e.target.value)} className="w-full px-3 py-2 rounded-lg border border-[var(--paper-line)] text-sm" />
               {debtAmountError && <div className="text-xs text-[var(--red)] mt-1">Masukkan jumlah yang benar</div>}
             </div>
             <div className="mb-4">
               <label className="block text-xs text-[var(--ink-soft)] mb-1 font-medium">Tanggal</label>
-              <input type="date" value={debtDate} onChange={(e) => setDebtDate(e.target.value)} className="w-full px-3 py-2 rounded-lg border border-[var(--paper-line)] bg-[var(--surface-soft)] text-[var(--ink)] text-sm" />
+              <input type="date" value={debtDate} onChange={(e) => setDebtDate(e.target.value)} className="w-full px-3 py-2 rounded-lg border border-[var(--paper-line)] text-sm" />
             </div>
             <div className="mb-4">
               <label className="block text-xs text-[var(--ink-soft)] mb-1 font-medium">Kasir (opsional)</label>
@@ -1527,7 +1523,7 @@ export default function HomePage() {
                   <div
                     key={name}
                     onClick={() => setDebtKasir(name)}
-                    className={`px-3 py-1.5 rounded-full border text-xs cursor-pointer ${debtKasir === name ? "bg-[var(--gold)] border-[var(--gold)] text-[var(--on-gold)]" : "border-[var(--paper-line)]"}`}
+                    className={`px-3 py-1.5 rounded-full border text-xs cursor-pointer ${debtKasir === name ? "bg-[var(--gold)] border-[var(--gold)] text-white" : "border-[var(--paper-line)]"}`}
                   >
                     {name}
                   </div>
@@ -1537,14 +1533,14 @@ export default function HomePage() {
                 value={debtKasir}
                 onChange={(e) => setDebtKasir(e.target.value)}
                 placeholder="Atau ketik nama kasir"
-                className="w-full px-3 py-2 rounded-lg border border-[var(--paper-line)] bg-[var(--surface-soft)] text-[var(--ink)] text-sm"
+                className="w-full px-3 py-2 rounded-lg border border-[var(--paper-line)] text-sm"
               />
             </div>
             <div className="flex gap-2">
               <button type="button" onClick={() => setShowAddDebt(false)} className="flex-1 py-2 rounded-lg border border-[var(--paper-line)] text-sm text-[var(--ink-soft)]">
                 Batal
               </button>
-              <button type="submit" className="flex-1 py-2 rounded-lg bg-[var(--green)] text-[var(--on-green)] text-sm font-medium">
+              <button type="submit" className="flex-1 py-2 rounded-lg bg-[var(--green)] text-white text-sm font-medium">
                 Simpan
               </button>
             </div>
@@ -1554,7 +1550,7 @@ export default function HomePage() {
 
       {/* Modal: Detail transaksi belanja (piutang) berjalan */}
       {detailGroup && (
-        <div className="fixed inset-0 bg-[var(--overlay)] flex items-end sm:items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50">
           <div className="bg-[var(--card)] rounded-t-3xl sm:rounded-3xl w-full sm:max-w-sm max-h-[88vh] overflow-y-auto shadow-2xl">
             <div className="sticky top-0 bg-[var(--card)] px-5 pt-5 pb-4 border-b border-[var(--paper-line)] flex items-start justify-between gap-3 z-10">
               <div className="min-w-0">
@@ -1605,7 +1601,7 @@ export default function HomePage() {
                       <button onClick={() => openPayModal(it, "partial")} className="flex-1 py-1.5 rounded-lg border border-[var(--paper-line)] text-xs font-medium">
                         Bayar sebagian
                       </button>
-                      <button onClick={() => openPayModal(it, "lunas")} className="flex-1 py-1.5 rounded-lg bg-[var(--green)] text-[var(--on-green)] text-xs font-medium">
+                      <button onClick={() => openPayModal(it, "lunas")} className="flex-1 py-1.5 rounded-lg bg-[var(--green)] text-white text-xs font-medium">
                         Tandai lunas
                       </button>
                     </div>
@@ -1637,7 +1633,7 @@ export default function HomePage() {
               </div>
               <button
                 onClick={() => openGroupLunasModal(detailGroup.items)}
-                className="w-full py-2.5 rounded-xl bg-[var(--green)] text-[var(--on-green)] text-sm font-semibold"
+                className="w-full py-2.5 rounded-xl bg-[var(--green)] text-white text-sm font-semibold"
               >
                 Tandai transaksi ini lunas
               </button>
@@ -1648,7 +1644,7 @@ export default function HomePage() {
 
       {/* Modal: Bayar */}
       {payTarget && (
-        <div className="fixed inset-0 bg-[var(--overlay)] flex items-center justify-center p-5 z-50">
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-5 z-50">
           <form onSubmit={handleConfirmPay} className="bg-[var(--card)] rounded-2xl p-5 w-full max-w-sm">
             <h2 className="font-ledger text-lg mb-1">{payTarget === "ALL" || Array.isArray(payTarget) ? "Tandai lunas" : payMode === "lunas" ? "Tandai lunas" : "Bayar sebagian"}</h2>
             <p className="text-xs text-[var(--ink-soft)] mb-3">
@@ -1697,7 +1693,7 @@ export default function HomePage() {
                     min="0"
                     value={payAmount}
                     onChange={(e) => setPayAmount(e.target.value)}
-                    className="w-full px-3 py-2 rounded-lg border border-[var(--paper-line)] bg-[var(--surface-soft)] text-[var(--ink)] text-sm"
+                    className="w-full px-3 py-2 rounded-lg border border-[var(--paper-line)] text-sm"
                   />
                   {payAmountError && (
                     <div className="text-xs text-[var(--red)] mt-1">
@@ -1724,7 +1720,7 @@ export default function HomePage() {
                       setReceiver(name);
                       setReceiverOther("");
                     }}
-                    className={`px-3 py-1.5 rounded-full border text-xs cursor-pointer ${receiver === name ? "bg-[var(--gold)] border-[var(--gold)] text-[var(--on-gold)]" : "border-[var(--paper-line)]"}`}
+                    className={`px-3 py-1.5 rounded-full border text-xs cursor-pointer ${receiver === name ? "bg-[var(--gold)] border-[var(--gold)] text-white" : "border-[var(--paper-line)]"}`}
                   >
                     {name}
                   </div>
@@ -1737,7 +1733,7 @@ export default function HomePage() {
                   if (e.target.value.trim()) setReceiver("");
                 }}
                 placeholder="Atau ketik nama lain"
-                className="w-full px-3 py-2 rounded-lg border border-[var(--paper-line)] bg-[var(--surface-soft)] text-[var(--ink)] text-sm mt-2"
+                className="w-full px-3 py-2 rounded-lg border border-[var(--paper-line)] text-sm mt-2"
               />
               {receiverError && <div className="text-xs text-[var(--red)] mt-1">Pilih atau isi nama penerima</div>}
             </div>
@@ -1745,7 +1741,7 @@ export default function HomePage() {
               <button type="button" onClick={() => setPayTarget(null)} className="flex-1 py-2 rounded-lg border border-[var(--paper-line)] text-sm text-[var(--ink-soft)]">
                 Batal
               </button>
-              <button type="submit" className="flex-1 py-2 rounded-lg bg-[var(--green)] text-[var(--on-green)] text-sm font-medium">
+              <button type="submit" className="flex-1 py-2 rounded-lg bg-[var(--green)] text-white text-sm font-medium">
                 Simpan
               </button>
             </div>
@@ -1755,7 +1751,7 @@ export default function HomePage() {
 
       {/* Modal: Pakai saldo lebih untuk membayar hutang */}
       {showUseCredit && selectedCustomer && (
-        <div className="fixed inset-0 bg-[var(--overlay)] flex items-center justify-center p-5 z-50">
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-5 z-50">
           <form onSubmit={handleConfirmUseCredit} className="bg-[var(--card)] rounded-2xl p-5 w-full max-w-sm">
             <h2 className="font-ledger text-lg mb-1">Pakai saldo lebih</h2>
             {(() => {
@@ -1784,7 +1780,7 @@ export default function HomePage() {
                       setUseCreditReceiver(name);
                       setUseCreditReceiverOther("");
                     }}
-                    className={`px-3 py-1.5 rounded-full border text-xs cursor-pointer ${useCreditReceiver === name ? "bg-[var(--gold)] border-[var(--gold)] text-[var(--on-gold)]" : "border-[var(--paper-line)]"}`}
+                    className={`px-3 py-1.5 rounded-full border text-xs cursor-pointer ${useCreditReceiver === name ? "bg-[var(--gold)] border-[var(--gold)] text-white" : "border-[var(--paper-line)]"}`}
                   >
                     {name}
                   </div>
@@ -1797,7 +1793,7 @@ export default function HomePage() {
                   if (e.target.value.trim()) setUseCreditReceiver("");
                 }}
                 placeholder="Atau ketik nama lain"
-                className="w-full px-3 py-2 rounded-lg border border-[var(--paper-line)] bg-[var(--surface-soft)] text-[var(--ink)] text-sm mt-2"
+                className="w-full px-3 py-2 rounded-lg border border-[var(--paper-line)] text-sm mt-2"
               />
               {useCreditReceiverError && <div className="text-xs text-[var(--red)] mt-1">Pilih atau isi nama yang memproses</div>}
             </div>
@@ -1805,7 +1801,7 @@ export default function HomePage() {
               <button type="button" onClick={() => setShowUseCredit(false)} className="flex-1 py-2 rounded-lg border border-[var(--paper-line)] text-sm text-[var(--ink-soft)]">
                 Batal
               </button>
-              <button type="submit" className="flex-1 py-2 rounded-lg bg-[var(--gold)] text-[var(--on-gold)] text-sm font-medium">
+              <button type="submit" className="flex-1 py-2 rounded-lg bg-[var(--gold)] text-white text-sm font-medium">
                 Pakai Saldo
               </button>
             </div>
