@@ -47,6 +47,7 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true);
   const [customers, setCustomers] = useState([]);
   const [debtItems, setDebtItems] = useState([]);
+  const [creditTx, setCreditTx] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState("terbaru");
   const [statusFilter, setStatusFilter] = useState("semua");
@@ -88,6 +89,11 @@ export default function HomePage() {
   const [payAmountError, setPayAmountError] = useState(false);
   const [receiverError, setReceiverError] = useState(false);
 
+  const [showUseCredit, setShowUseCredit] = useState(false);
+  const [useCreditReceiver, setUseCreditReceiver] = useState("");
+  const [useCreditReceiverOther, setUseCreditReceiverOther] = useState("");
+  const [useCreditReceiverError, setUseCreditReceiverError] = useState(false);
+
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
       if (!data.session) {
@@ -105,8 +111,13 @@ export default function HomePage() {
       .from("debt_items")
       .select("*, payments(*)")
       .order("date", { ascending: false });
+    const { data: credits } = await supabase
+      .from("credit_transactions")
+      .select("*")
+      .order("created_at", { ascending: false });
     setCustomers(custs || []);
     setDebtItems(items || []);
+    setCreditTx(credits || []);
     setLoading(false);
   }, []);
 
@@ -119,6 +130,7 @@ export default function HomePage() {
       .on("postgres_changes", { event: "*", schema: "public", table: "customers", filter: `user_id=eq.${userId}` }, fetchAll)
       .on("postgres_changes", { event: "*", schema: "public", table: "debt_items", filter: `user_id=eq.${userId}` }, fetchAll)
       .on("postgres_changes", { event: "*", schema: "public", table: "payments", filter: `user_id=eq.${userId}` }, fetchAll)
+      .on("postgres_changes", { event: "*", schema: "public", table: "credit_transactions", filter: `user_id=eq.${userId}` }, fetchAll)
       .subscribe();
 
     return () => {
@@ -141,6 +153,9 @@ export default function HomePage() {
     const items = debtItems.filter((i) => i.customer_id === custId);
     if (items.length === 0) return null;
     return items.reduce((a, b) => (new Date(a.date) > new Date(b.date) ? a : b)).date;
+  }
+  function creditBalanceForCustomer(custId) {
+    return creditTx.filter((c) => c.customer_id === custId).reduce((s, c) => s + Number(c.amount), 0);
   }
 
   async function handleAddCustomer(e) {
@@ -329,7 +344,9 @@ export default function HomePage() {
       amount = remaining;
     } else {
       amount = parseFloat(payAmount);
-      if (!amount || amount <= 0 || isNaN(amount) || amount > remaining) {
+      // Boleh melebihi sisa hutang barang ini — kelebihannya nanti
+      // otomatis disimpan sebagai saldo lebih pelanggan.
+      if (!amount || amount <= 0 || isNaN(amount)) {
         setPayAmountError(true);
         valid = false;
       } else {
@@ -338,12 +355,89 @@ export default function HomePage() {
     }
     if (!valid) return;
 
+    const actualPayment = Math.min(amount, remaining);
+    const overpay = Math.max(amount - remaining, 0);
+
     await supabase.from("payments").insert({
       debt_item_id: payTarget.id,
-      amount: amount,
+      amount: actualPayment,
       received_by: finalReceiver,
     });
+
+    if (overpay > 0) {
+      await supabase.from("credit_transactions").insert({
+        customer_id: selectedCustomerId,
+        amount: overpay,
+        note: `Kelebihan bayar${payTarget.item ? " - " + payTarget.item : ""}`,
+      });
+    }
+
     setPayTarget(null);
+    fetchAll();
+
+    if (overpay > 0) {
+      alert(
+        `Pembayaran melebihi sisa hutang sebesar ${formatRupiah(overpay)}. Kelebihannya sudah disimpan sebagai saldo lebih pelanggan ini, dan bisa dipakai untuk pembayaran berikutnya.`
+      );
+    }
+  }
+
+  // Pakai saldo lebih pelanggan untuk membayar hutang yang masih berjalan,
+  // dimulai dari yang paling lama, sampai saldo habis atau hutang lunas semua.
+  function openUseCreditModal() {
+    const available = creditBalanceForCustomer(selectedCustomerId);
+    if (available <= 0) {
+      alert("Pelanggan ini tidak memiliki saldo lebih.");
+      return;
+    }
+    const items = debtItems.filter((i) => i.customer_id === selectedCustomerId && remainingOf(i) > 0);
+    if (items.length === 0) {
+      alert("Pelanggan ini tidak memiliki hutang aktif untuk dibayar pakai saldo.");
+      return;
+    }
+    setUseCreditReceiver("");
+    setUseCreditReceiverOther("");
+    setUseCreditReceiverError(false);
+    setShowUseCredit(true);
+  }
+
+  async function handleConfirmUseCredit(e) {
+    e.preventDefault();
+    const finalReceiver = useCreditReceiverOther.trim() || useCreditReceiver;
+    if (!finalReceiver) {
+      setUseCreditReceiverError(true);
+      return;
+    }
+    setUseCreditReceiverError(false);
+
+    let available = creditBalanceForCustomer(selectedCustomerId);
+    const items = debtItems
+      .filter((i) => i.customer_id === selectedCustomerId && remainingOf(i) > 0)
+      .sort((a, b) => new Date(a.date) - new Date(b.date));
+
+    const paymentRows = [];
+    let totalUsed = 0;
+    for (const it of items) {
+      if (available <= 0) break;
+      const rem = remainingOf(it);
+      const use = Math.min(available, rem);
+      if (use > 0) {
+        paymentRows.push({ debt_item_id: it.id, amount: use, received_by: finalReceiver });
+        available -= use;
+        totalUsed += use;
+      }
+    }
+
+    if (totalUsed > 0) {
+      await supabase.from("payments").insert(paymentRows);
+      await supabase.from("credit_transactions").insert({
+        customer_id: selectedCustomerId,
+        amount: -totalUsed,
+        note: "Dipakai untuk membayar hutang",
+      });
+    }
+
+    setShowUseCredit(false);
     fetchAll();
   }
 
@@ -927,6 +1021,7 @@ export default function HomePage() {
                 )}
                 {filteredCustomers.map((c) => {
                   const isLunas = c.balance <= 0;
+                  const credit = creditBalanceForCustomer(c.id);
                   const lastStr = c.last
                     ? new Date(c.last).toLocaleDateString("id-ID", { day: "numeric", month: "short" })
                     : "Belum ada transaksi";
@@ -960,6 +1055,11 @@ export default function HomePage() {
                               </svg>
                               <span className="truncate">{lastStr}</span>
                             </div>
+                            {credit > 0 && (
+                              <div className="text-[11px] text-[var(--gold)] mt-0.5 truncate">
+                                Saldo lebih {formatRupiah(credit)}
+                              </div>
+                            )}
                           </div>
                         </div>
                         <div className="text-right shrink-0 flex items-center gap-1.5">
@@ -1044,6 +1144,15 @@ export default function HomePage() {
             <div className={`font-mono-num text-3xl font-semibold mt-0.5 ${balanceForCustomer(selectedCustomer.id) <= 0 ? "text-[var(--green)]" : "text-[var(--red)]"}`}>
               {formatRupiah(balanceForCustomer(selectedCustomer.id))}
             </div>
+            {creditBalanceForCustomer(selectedCustomer.id) > 0 && (
+              <div className="inline-flex items-center gap-1.5 mt-2.5 px-3 py-1 rounded-full bg-[var(--gold-soft)] text-[var(--gold)] text-xs font-medium">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
+                  <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2" />
+                  <path d="M12 7v5l3 2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                Saldo lebih: {formatRupiah(creditBalanceForCustomer(selectedCustomer.id))}
+              </div>
+            )}
           </div>
 
           <div className="flex gap-2 mb-4">
@@ -1060,6 +1169,15 @@ export default function HomePage() {
               Tandai semua lunas
             </button>
           </div>
+
+          {creditBalanceForCustomer(selectedCustomer.id) > 0 && balanceForCustomer(selectedCustomer.id) > 0 && (
+            <button
+              onClick={openUseCreditModal}
+              className="w-full mb-4 py-2.5 rounded-lg bg-[var(--card)] border border-[var(--gold)]/40 text-[var(--gold)] text-sm font-medium"
+            >
+              Pakai saldo lebih untuk bayar hutang
+            </button>
+          )}
 
           <div className="relative flex bg-[var(--card)] border border-[var(--paper-line)] rounded-xl p-1 mb-3.5 text-sm font-medium">
             <div
@@ -1520,11 +1638,28 @@ export default function HomePage() {
                 </>
               )}
             </p>
+            {creditBalanceForCustomer(selectedCustomerId) > 0 && (
+              <div className="mb-3 px-3 py-2 rounded-lg bg-[var(--gold-soft)] text-xs text-[var(--gold)] border border-[var(--gold)]/30">
+                Pelanggan ini punya saldo lebih {formatRupiah(creditBalanceForCustomer(selectedCustomerId))}. Tutup form ini lalu tekan &ldquo;Pakai saldo lebih&rdquo; di halaman pelanggan untuk memakainya.
+              </div>
+            )}
             {payMode !== "lunas" && (
               <div className="mb-3">
                 <label className="block text-xs text-[var(--ink-soft)] mb-1 font-medium">Jumlah dibayar (Rp)</label>
                 <input type="number" min="0" value={payAmount} onChange={(e) => setPayAmount(e.target.value)} className="w-full px-3 py-2 rounded-lg border border-[var(--paper-line)] text-sm" />
-                {payAmountError && <div className="text-xs text-[var(--red)] mt-1">Masukkan jumlah yang benar (maks. sisa hutang)</div>}
+                {payAmountError && <div className="text-xs text-[var(--red)] mt-1">Masukkan jumlah pembayaran yang benar</div>}
+                {(() => {
+                  const amt = parseFloat(payAmount);
+                  const rem = remainingOf(payTarget);
+                  if (!isNaN(amt) && amt > rem && rem > 0) {
+                    return (
+                      <div className="text-xs text-[var(--gold)] mt-1">
+                        Kelebihan {formatRupiah(amt - rem)} akan disimpan sebagai saldo lebih.
+                      </div>
+                    );
+                  }
+                  return null;
+                })()}
               </div>
             )}
             <div className="mb-4">
@@ -1560,6 +1695,66 @@ export default function HomePage() {
               </button>
               <button type="submit" className="flex-1 py-2 rounded-lg bg-[var(--green)] text-white text-sm font-medium">
                 Simpan
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* Modal: Pakai saldo lebih untuk membayar hutang */}
+      {showUseCredit && selectedCustomer && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-5 z-50">
+          <form onSubmit={handleConfirmUseCredit} className="bg-[var(--card)] rounded-2xl p-5 w-full max-w-sm">
+            <h2 className="font-ledger text-lg mb-1">Pakai saldo lebih</h2>
+            {(() => {
+              const available = creditBalanceForCustomer(selectedCustomer.id);
+              const items = debtItems
+                .filter((i) => i.customer_id === selectedCustomer.id && remainingOf(i) > 0)
+                .sort((a, b) => new Date(a.date) - new Date(b.date));
+              const totalDebt = items.reduce((s, i) => s + remainingOf(i), 0);
+              const willUse = Math.min(available, totalDebt);
+              const leftoverCredit = available - willUse;
+              return (
+                <p className="text-xs text-[var(--ink-soft)] mb-3">
+                  Saldo lebih tersedia: {formatRupiah(available)}. Akan dipakai {formatRupiah(willUse)} untuk
+                  melunasi hutang paling lama terlebih dahulu.
+                  {leftoverCredit > 0 && ` Sisa saldo setelahnya: ${formatRupiah(leftoverCredit)}.`}
+                </p>
+              );
+            })()}
+            <div className="mb-4">
+              <label className="block text-xs text-[var(--ink-soft)] mb-1 font-medium">Siapa yang memproses ini?</label>
+              <div className="flex gap-2 flex-wrap mt-1">
+                {["Saya", "Fuji", "Ibu"].map((name) => (
+                  <div
+                    key={name}
+                    onClick={() => {
+                      setUseCreditReceiver(name);
+                      setUseCreditReceiverOther("");
+                    }}
+                    className={`px-3 py-1.5 rounded-full border text-xs cursor-pointer ${useCreditReceiver === name ? "bg-[var(--gold)] border-[var(--gold)] text-white" : "border-[var(--paper-line)]"}`}
+                  >
+                    {name}
+                  </div>
+                ))}
+              </div>
+              <input
+                value={useCreditReceiverOther}
+                onChange={(e) => {
+                  setUseCreditReceiverOther(e.target.value);
+                  if (e.target.value.trim()) setUseCreditReceiver("");
+                }}
+                placeholder="Atau ketik nama lain"
+                className="w-full px-3 py-2 rounded-lg border border-[var(--paper-line)] text-sm mt-2"
+              />
+              {useCreditReceiverError && <div className="text-xs text-[var(--red)] mt-1">Pilih atau isi nama yang memproses</div>}
+            </div>
+            <div className="flex gap-2">
+              <button type="button" onClick={() => setShowUseCredit(false)} className="flex-1 py-2 rounded-lg border border-[var(--paper-line)] text-sm text-[var(--ink-soft)]">
+                Batal
+              </button>
+              <button type="submit" className="flex-1 py-2 rounded-lg bg-[var(--gold)] text-white text-sm font-medium">
+                Pakai Saldo
               </button>
             </div>
           </form>
