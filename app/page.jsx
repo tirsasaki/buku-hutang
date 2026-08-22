@@ -147,6 +147,31 @@ export default function HomePage() {
     router.push("/login");
   }
 
+  // Ambil nomor invoice berikutnya (format INV-YYYYMMDD-0001) lewat fungsi
+  // di database (public.next_invoice_no) supaya urutannya tetap aman/atomik
+  // walau ada beberapa transaksi dibuat hampir bersamaan. Satu invoice dipakai
+  // bersama untuk semua barang dalam satu transaksi (mis. input banyak barang
+  // sekaligus di kasir).
+  async function getNextInvoiceNo(dateVal) {
+    const d = dateVal || new Date().toISOString().split("T")[0];
+    const { data, error } = await supabase.rpc("next_invoice_no", { p_date: d });
+    if (error || !data) {
+      console.error("Gagal membuat nomor invoice dari database, memakai fallback lokal:", error);
+      // Fallback (tanpa jaminan anti-tabrakan) jika migrasi database belum dijalankan
+      // atau RPC gagal, supaya transaksi tetap bisa disimpan.
+      const compact = d.replace(/-/g, "");
+      const prefix = `INV-${compact}-`;
+      const existing = debtItems
+        .map((it) => it.invoice_no)
+        .filter((no) => no && no.startsWith(prefix))
+        .map((no) => parseInt(no.slice(prefix.length), 10))
+        .filter((n) => !isNaN(n));
+      const next = (existing.length ? Math.max(...existing) : 0) + 1;
+      return prefix + String(next).padStart(4, "0");
+    }
+    return data;
+  }
+
   function balanceForCustomer(custId) {
     return debtItems
       .filter((i) => i.customer_id === custId)
@@ -183,13 +208,16 @@ export default function HomePage() {
       return;
     }
     setDebtAmountError(false);
+    const dateVal = debtDate || new Date().toISOString().split("T")[0];
+    const invoiceNo = await getNextInvoiceNo(dateVal);
     await supabase.from("debt_items").insert({
       customer_id: selectedCustomerId,
       item: debtItemName.trim(),
       qty: parseInt(debtQty) || 1,
       amount: amount,
-      date: debtDate || new Date().toISOString().split("T")[0],
+      date: dateVal,
       kasir: debtKasir.trim() || null,
+      invoice_no: invoiceNo,
     });
     setDebtItemName("");
     setDebtQty(1);
@@ -313,6 +341,7 @@ export default function HomePage() {
 
     const dateVal = bulkDate || new Date().toISOString().split("T")[0];
     const kasirVal = bulkKasir.trim() || null;
+    const invoiceNo = await getNextInvoiceNo(dateVal);
     const rows = bulkItems.map((row) => ({
       customer_id: bulkCustomerId,
       item: row.item.trim(),
@@ -320,6 +349,7 @@ export default function HomePage() {
       amount: parseFloat(row.amount),
       date: dateVal,
       kasir: kasirVal,
+      invoice_no: invoiceNo,
     }));
 
     await supabase.from("debt_items").insert(rows);
@@ -558,7 +588,8 @@ export default function HomePage() {
 
   // Format struk kasir klasik: kode singkat & rata kolom ala mesin kasir,
   // bukan kalimat panjang. Dibungkus ``` agar WhatsApp merendernya sebagai
-  // font monospace (tampilan seperti struk cetak asli).
+  // font monospace (tampilan seperti struk cetak asli). Barang dikelompokkan
+  // per nomor invoice supaya nomornya ikut tampil di struk.
   function buildWaMessage(cust) {
     const unpaidItems = debtItems.filter((i) => i.customer_id === cust.id && remainingOf(i) > 0);
     if (unpaidItems.length === 0) return null;
@@ -573,14 +604,36 @@ export default function HomePage() {
 
     const todayStr = new Date().toLocaleDateString("id-ID", { day: "2-digit", month: "2-digit", year: "2-digit" });
 
-    const itemLines = unpaidItems.map((it) => {
-      const qty = it.qty || 1;
-      const rem = remainingOf(it);
-      const unitPrice = Math.round(rem / qty);
-      const name = (it.item || "Barang").toUpperCase();
-      const qtyPriceStr = "  " + qty + " x " + unitPrice.toLocaleString("id-ID");
-      const totalStr = rem.toLocaleString("id-ID");
-      return name + "\n" + padRight(qtyPriceStr, totalStr);
+    const groups = [];
+    const groupByKey = new Map();
+    unpaidItems.forEach((it) => {
+      const key = it.invoice_no || `${it.date}__${it.kasir || ""}`;
+      if (!groupByKey.has(key)) {
+        const group = { key, invoiceNo: it.invoice_no || null, items: [] };
+        groupByKey.set(key, group);
+        groups.push(group);
+      }
+      groupByKey.get(key).items.push(it);
+    });
+
+    const invoiceBlocks = groups.map((g) => {
+      const itemLines = g.items.map((it) => {
+        const qty = it.qty || 1;
+        const rem = remainingOf(it);
+        const unitPrice = Math.round(rem / qty);
+        const name = (it.item || "Barang").toUpperCase();
+        const qtyPriceStr = "  " + qty + " x " + unitPrice.toLocaleString("id-ID");
+        const totalStr = rem.toLocaleString("id-ID");
+        return name + "\n" + padRight(qtyPriceStr, totalStr);
+      });
+      const subtotal = g.items.reduce((s, it) => s + remainingOf(it), 0);
+      return (
+        "No. Invoice: " + (g.invoiceNo || "-") + "\n" +
+        divider + "\n" +
+        itemLines.join("\n") + "\n" +
+        divider + "\n" +
+        padRight("SUBTOTAL", subtotal.toLocaleString("id-ID"))
+      );
     });
 
     const total = unpaidItems.reduce((s, it) => s + remainingOf(it), 0);
@@ -590,9 +643,9 @@ export default function HomePage() {
       doubleLine + "\n" +
       "NM   : " + (cust.name || "-") + "\n" +
       "TGL  : " + todayStr + "\n" +
-      divider + "\n" +
-      itemLines.join("\n") + "\n" +
-      divider + "\n" +
+      doubleLine + "\n" +
+      invoiceBlocks.join("\n" + doubleLine + "\n") + "\n" +
+      doubleLine + "\n" +
       padRight("TOTAL", formatRupiah(total)) + "\n" +
       "STATUS: BLM LUNAS\n" +
       doubleLine;
@@ -690,13 +743,15 @@ export default function HomePage() {
     const groups = [];
     const groupByKey = new Map();
     ongoingItems.forEach((it) => {
-      const key = `${it.date}__${it.kasir || ""}`;
+      const key = it.invoice_no || `${it.date}__${it.kasir || ""}`;
       if (!groupByKey.has(key)) {
         const group = {
           key,
           date: it.date,
           kasir: it.kasir || null,
-          trxNo: "TRX-" + String(it.id).replace(/-/g, "").slice(0, 8).toUpperCase(),
+          // Nomor invoice asli (INV-YYYYMMDD-0001). Data lama sebelum fitur ini
+          // dibuat belum punya invoice_no, jadi dipakaikan kode sementara.
+          trxNo: it.invoice_no || "TRX-" + String(it.id).replace(/-/g, "").slice(0, 8).toUpperCase(),
           items: [],
         };
         groupByKey.set(key, group);
@@ -1505,7 +1560,7 @@ export default function HomePage() {
                     </div>
 
                     <div className="grid grid-cols-2 gap-y-1.5 mt-3 text-xs">
-                      <div className="text-[var(--ink-soft)]">No. transaksi</div>
+                      <div className="text-[var(--ink-soft)]">No. Invoice</div>
                       <div className="text-right font-mono-num">{g.trxNo}</div>
                       <div className="text-[var(--ink-soft)]">Kasir</div>
                       <div className="text-right">{g.kasir || "-"}</div>
@@ -1532,9 +1587,10 @@ export default function HomePage() {
                 </div>
               )}
               {(() => {
-                // Kelompokkan barang yang selesai berdasarkan tanggal selesai
-                // (tanggal pembayaran lunas terakhir) & kasir yang menerima,
-                // lalu render tiap kelompok sebagai satu struk belanja.
+                // Kelompokkan barang yang selesai berdasarkan nomor invoice (satu invoice
+                // = satu struk belanja). Data lama sebelum fitur invoice dibuat belum
+                // punya invoice_no, jadi dikelompokkan berdasarkan tanggal pembayaran
+                // lunas terakhir & kasir yang menerima seperti sebelumnya.
                 const groups = [];
                 const groupByKey = new Map();
                 doneItems.forEach((it) => {
@@ -1542,9 +1598,9 @@ export default function HomePage() {
                   const lunasDate = lastPayment ? new Date(lastPayment.paid_at) : new Date(it.date);
                   const lunasDateStr = lunasDate.toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" });
                   const receivedBy = lastPayment ? lastPayment.received_by : null;
-                  const key = `${lunasDateStr}__${receivedBy || ""}`;
+                  const key = it.invoice_no || `${lunasDateStr}__${receivedBy || ""}`;
                   if (!groupByKey.has(key)) {
-                    const group = { key, lunasDate, lunasDateStr, receivedBy, items: [] };
+                    const group = { key, lunasDate, lunasDateStr, receivedBy, invoiceNo: it.invoice_no || null, items: [] };
                     groupByKey.set(key, group);
                     groups.push(group);
                   }
@@ -1561,10 +1617,11 @@ export default function HomePage() {
                       key={g.key}
                       className="font-mono-num bg-[var(--card)] border border-dashed border-[var(--paper-line)] rounded-lg shadow-sm overflow-hidden"
                     >
-                      {/* Kepala struk: tanggal selesai & nama kasir */}
+                      {/* Kepala struk: nomor invoice, tanggal selesai & nama kasir */}
                       <div className="px-3.5 pt-3.5 pb-2.5 text-center border-b border-dashed border-[var(--paper-line)]">
                         <div className="text-[10px] tracking-[0.25em] text-[var(--ink-soft)] uppercase">Struk Pembayaran</div>
-                        <div className="text-sm font-semibold mt-1">{g.lunasDateStr}</div>
+                        <div className="text-xs font-semibold mt-1.5">{g.invoiceNo || "-"}</div>
+                        <div className="text-sm font-semibold mt-0.5">{g.lunasDateStr}</div>
                         <div className="text-[11px] text-[var(--ink-soft)] mt-0.5">
                           Kasir: {g.receivedBy || "-"}
                         </div>
