@@ -67,6 +67,7 @@ export default function HomePage() {
   const [showAddDebt, setShowAddDebt] = useState(false);
   const [debtItemName, setDebtItemName] = useState("");
   const [debtQty, setDebtQty] = useState(1);
+  const [debtUnitPrice, setDebtUnitPrice] = useState("");
   const [debtAmount, setDebtAmount] = useState("");
   const [debtDate, setDebtDate] = useState("");
   const [debtKasir, setDebtKasir] = useState("");
@@ -75,7 +76,7 @@ export default function HomePage() {
   const [bulkCustomerId, setBulkCustomerId] = useState("");
   const [bulkDate, setBulkDate] = useState(() => new Date().toISOString().split("T")[0]);
   const [bulkKasir, setBulkKasir] = useState("");
-  const [bulkItems, setBulkItems] = useState([{ item: "", qty: 1, amount: "" }]);
+  const [bulkItems, setBulkItems] = useState([{ item: "", qty: 1, amount: "", unitPrice: "" }]);
   const [bulkCustomerError, setBulkCustomerError] = useState(false);
   const [bulkItemErrors, setBulkItemErrors] = useState({});
   const [showCustomerPicker, setShowCustomerPicker] = useState(false);
@@ -192,17 +193,44 @@ export default function HomePage() {
     });
     setDebtItemName("");
     setDebtQty(1);
+    setDebtUnitPrice("");
     setDebtAmount("");
     setDebtKasir("");
     setShowAddDebt(false);
     fetchAll(); 
   }
 
+  // Sinkronisasi qty, harga per item, & total harga untuk form "Tambah hutang baru"
+  // (logika sama dengan form kasir): qty = 1 -> harga per item nonaktif; qty >= 2 -> aktif & total otomatis.
+  function handleDebtQtyChange(value) {
+    const q = parseInt(value) || 1;
+    setDebtQty(value);
+    if (q <= 1) {
+      setDebtUnitPrice(debtAmount);
+    } else {
+      const unit = parseFloat(debtUnitPrice) || 0;
+      if (unit) setDebtAmount(String(unit * q));
+    }
+  }
+
+  function handleDebtUnitPriceChange(value) {
+    setDebtUnitPrice(value);
+    const q = parseInt(debtQty) || 1;
+    const unit = parseFloat(value) || 0;
+    setDebtAmount(value === "" ? "" : String(unit * q));
+  }
+
+  function handleDebtAmountChange(value) {
+    setDebtAmount(value);
+    const q = parseInt(debtQty) || 1;
+    if (q <= 1) setDebtUnitPrice(value);
+  }
+
   function resetKasirForm() {
     setBulkCustomerId("");
     setBulkDate(new Date().toISOString().split("T")[0]);
     setBulkKasir("");
-    setBulkItems([{ item: "", qty: 1, amount: "" }]);
+    setBulkItems([{ item: "", qty: 1, amount: "", unitPrice: "" }]);
     setBulkCustomerError(false);
     setBulkItemErrors({});
   }
@@ -221,15 +249,44 @@ export default function HomePage() {
   }
 
   function addBulkRow() {
-    setBulkItems((rows) => [...rows, { item: "", qty: 1, amount: "" }]);
+    setBulkItems((rows) => [...rows, { item: "", qty: 1, amount: "", unitPrice: "" }]);
   }
 
   function removeBulkRow(idx) {
     setBulkItems((rows) => rows.filter((_, i) => i !== idx));
   }
 
+  // Sinkronisasi antar qty, harga per item, & total harga:
+  // - qty = 1  -> "harga per item" nonaktif, mengikuti "total harga" (1:1)
+  // - qty >= 2 -> "harga per item" aktif, "total harga" dihitung otomatis (qty x harga per item)
   function updateBulkRow(idx, field, value) {
-    setBulkItems((rows) => rows.map((r, i) => (i === idx ? { ...r, [field]: value } : r)));
+    setBulkItems((rows) =>
+      rows.map((r, i) => {
+        if (i !== idx) return r;
+        const row = { ...r, [field]: value };
+
+        if (field === "qty") {
+          const q = parseInt(value) || 1;
+          if (q <= 1) {
+            row.unitPrice = row.amount;
+          } else {
+            const unit = parseFloat(row.unitPrice) || 0;
+            row.amount = unit ? String(unit * q) : row.amount;
+          }
+        } else if (field === "unitPrice") {
+          const q = parseInt(row.qty) || 1;
+          const unit = parseFloat(value) || 0;
+          row.amount = value === "" ? "" : String(unit * q);
+        } else if (field === "amount") {
+          const q = parseInt(row.qty) || 1;
+          if (q <= 1) {
+            row.unitPrice = value;
+          }
+        }
+
+        return row;
+      })
+    );
   }
 
   async function handleAddDebtBulk(e) {
@@ -964,7 +1021,7 @@ export default function HomePage() {
                         placeholder="Contoh: Beras 5kg"
                         className="w-full px-3 py-2.5 rounded-xl border border-[var(--paper-line)] bg-[var(--paper)] text-sm mb-2 outline-none focus:border-[var(--gold)] transition-colors"
                       />
-                      <div className="flex gap-2">
+                      <div className="flex gap-2 mb-2">
                         <div className="flex-1">
                           <label className="block text-[11px] text-[var(--ink-soft)] mb-1 font-medium">Qty (pcs)</label>
                           <input
@@ -976,15 +1033,37 @@ export default function HomePage() {
                           />
                         </div>
                         <div className="flex-[2]">
-                          <label className="block text-[11px] text-[var(--ink-soft)] mb-1 font-medium">Harga total (Rp)</label>
+                          <label className="block text-[11px] text-[var(--ink-soft)] mb-1 font-medium">Harga per item (Rp)</label>
                           <input
                             type="number"
                             min="0"
-                            value={row.amount}
-                            onChange={(e) => updateBulkRow(idx, "amount", e.target.value)}
-                            className="w-full px-3 py-2 rounded-xl border border-[var(--paper-line)] bg-[var(--paper)] text-sm outline-none focus:border-[var(--gold)] transition-colors"
+                            value={row.unitPrice}
+                            disabled={(parseInt(row.qty) || 1) <= 1}
+                            onChange={(e) => updateBulkRow(idx, "unitPrice", e.target.value)}
+                            placeholder={(parseInt(row.qty) || 1) <= 1 ? "Otomatis (qty 1)" : ""}
+                            className={`w-full px-3 py-2 rounded-xl border text-sm outline-none transition-colors ${
+                              (parseInt(row.qty) || 1) <= 1
+                                ? "border-[var(--paper-line)] bg-[var(--paper-line)]/40 text-[var(--ink-soft)] cursor-not-allowed"
+                                : "border-[var(--paper-line)] bg-[var(--paper)] focus:border-[var(--gold)]"
+                            }`}
                           />
                         </div>
+                      </div>
+                      <div>
+                        <label className="block text-[11px] text-[var(--ink-soft)] mb-1 font-medium">Total harga (Rp)</label>
+                        <input
+                          type="number"
+                          min="0"
+                          value={row.amount}
+                          disabled={(parseInt(row.qty) || 1) > 1}
+                          onChange={(e) => updateBulkRow(idx, "amount", e.target.value)}
+                          placeholder={(parseInt(row.qty) || 1) > 1 ? "Otomatis (qty x harga per item)" : ""}
+                          className={`w-full px-3 py-2 rounded-xl border text-sm outline-none transition-colors ${
+                            (parseInt(row.qty) || 1) > 1
+                              ? "border-[var(--paper-line)] bg-[var(--paper-line)]/40 text-[var(--ink-soft)] cursor-not-allowed"
+                              : "border-[var(--paper-line)] bg-[var(--paper)] focus:border-[var(--gold)]"
+                          }`}
+                        />
                       </div>
                       {bulkItemErrors[idx] && <div className="text-xs text-[var(--red)] mt-1.5">Masukkan jumlah yang benar</div>}
                     </div>
@@ -1527,6 +1606,7 @@ export default function HomePage() {
             onClick={() => {
               setDebtItemName("");
               setDebtQty(1);
+              setDebtUnitPrice("");
               setDebtAmount("");
               setDebtDate(new Date().toISOString().split("T")[0]);
               setDebtKasir("");
@@ -1754,11 +1834,39 @@ export default function HomePage() {
             </div>
             <div className="mb-3">
               <label className="block text-xs text-[var(--ink-soft)] mb-1 font-medium">Qty (pcs)</label>
-              <input type="number" min="1" value={debtQty} onChange={(e) => setDebtQty(e.target.value)} className="w-full px-3 py-2 rounded-lg border border-[var(--paper-line)] bg-[var(--paper)] text-sm outline-none focus:border-[var(--gold)] transition-colors" />
+              <input type="number" min="1" value={debtQty} onChange={(e) => handleDebtQtyChange(e.target.value)} className="w-full px-3 py-2 rounded-lg border border-[var(--paper-line)] bg-[var(--paper)] text-sm outline-none focus:border-[var(--gold)] transition-colors" />
             </div>
             <div className="mb-3">
-              <label className="block text-xs text-[var(--ink-soft)] mb-1 font-medium">Harga total (Rp)</label>
-              <input type="number" min="0" value={debtAmount} onChange={(e) => setDebtAmount(e.target.value)} className="w-full px-3 py-2 rounded-lg border border-[var(--paper-line)] bg-[var(--paper)] text-sm outline-none focus:border-[var(--gold)] transition-colors" />
+              <label className="block text-xs text-[var(--ink-soft)] mb-1 font-medium">Harga per item (Rp)</label>
+              <input
+                type="number"
+                min="0"
+                value={debtUnitPrice}
+                disabled={(parseInt(debtQty) || 1) <= 1}
+                onChange={(e) => handleDebtUnitPriceChange(e.target.value)}
+                placeholder={(parseInt(debtQty) || 1) <= 1 ? "Otomatis (qty 1)" : ""}
+                className={`w-full px-3 py-2 rounded-lg border text-sm outline-none transition-colors ${
+                  (parseInt(debtQty) || 1) <= 1
+                    ? "border-[var(--paper-line)] bg-[var(--paper-line)]/40 text-[var(--ink-soft)] cursor-not-allowed"
+                    : "border-[var(--paper-line)] bg-[var(--paper)] focus:border-[var(--gold)]"
+                }`}
+              />
+            </div>
+            <div className="mb-3">
+              <label className="block text-xs text-[var(--ink-soft)] mb-1 font-medium">Total harga (Rp)</label>
+              <input
+                type="number"
+                min="0"
+                value={debtAmount}
+                disabled={(parseInt(debtQty) || 1) > 1}
+                onChange={(e) => handleDebtAmountChange(e.target.value)}
+                placeholder={(parseInt(debtQty) || 1) > 1 ? "Otomatis (qty x harga per item)" : ""}
+                className={`w-full px-3 py-2 rounded-lg border text-sm outline-none transition-colors ${
+                  (parseInt(debtQty) || 1) > 1
+                    ? "border-[var(--paper-line)] bg-[var(--paper-line)]/40 text-[var(--ink-soft)] cursor-not-allowed"
+                    : "border-[var(--paper-line)] bg-[var(--paper)] focus:border-[var(--gold)]"
+                }`}
+              />
               {debtAmountError && <div className="text-xs text-[var(--red)] mt-1">Masukkan jumlah yang benar</div>}
             </div>
             <div className="mb-4">
