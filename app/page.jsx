@@ -1160,60 +1160,47 @@ export default function HomePage() {
                         className="absolute left-0 top-3 bottom-3 w-[3px] rounded-full"
                         style={{ background: isLunas ? "var(--green)" : "var(--red)" }}
                       />
-                      <div className="flex justify-between items-center gap-3">
-                        <div className="flex items-center gap-3 min-w-0">
-                          <div
-                            style={{ backgroundColor: ccolor, boxShadow: `0 0 0 3px ${ccolor}22` }}
-                            className="w-11 h-11 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0 shadow-sm"
-                          >
-                            {customerInitials(c.name)}
-                          </div>
-                          <div className="min-w-0">
+                      <div className="flex items-center gap-3">
+                        <div
+                          style={{ backgroundColor: ccolor, boxShadow: `0 0 0 3px ${ccolor}22` }}
+                          className="w-11 h-11 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0 shadow-sm"
+                        >
+                          {customerInitials(c.name)}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-baseline justify-between gap-2">
                             <div className="font-semibold text-sm truncate text-[var(--ink)]">{c.name}</div>
-                            <div className="text-xs text-[var(--ink-soft)] mt-0.5 flex items-center gap-1">
-                              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" className="shrink-0">
+                            <div className={`font-mono-num text-sm font-semibold tabular-nums shrink-0 ${isLunas ? "text-[var(--green)]" : "text-[var(--red)]"}`}>
+                              {formatRupiah(c.balance)}
+                            </div>
+                          </div>
+                          <div className="flex items-center justify-between gap-2 mt-1">
+                            <div className="flex items-center gap-1 text-[11px] text-[var(--ink-soft)] min-w-0">
+                              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" className="shrink-0">
                                 <rect x="3.5" y="4.5" width="17" height="16" rx="2.5" stroke="currentColor" strokeWidth="1.8" />
                                 <path d="M3.5 9h17M8 3v3M16 3v3" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
                               </svg>
-                              <span className="truncate">
-                                {lastStr ? <>Transaksi terakhir: {lastStr}</> : "Belum ada transaksi"}
-                              </span>
-                            </div>
-                            {credit > 0 && (
-                              <div className="inline-flex items-center gap-1 text-[11px] text-[var(--gold)] mt-1 bg-[var(--gold-soft)] px-1.5 py-0.5 rounded-md truncate">
-                                <svg width="9" height="9" viewBox="0 0 24 24" fill="none" className="shrink-0">
-                                  <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2.5" />
-                                  <path d="M12 7v5l3 2" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-                                </svg>
-                                Saldo lebih {formatRupiah(credit)}
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                        <div className="text-right shrink-0 flex items-center gap-1.5">
-                          <div>
-                            <div className={`font-mono-num text-base font-semibold tabular-nums ${isLunas ? "text-[var(--green)]" : "text-[var(--red)]"}`}>
-                              {formatRupiah(c.balance)}
+                              <span className="truncate">{lastStr || "Belum ada transaksi"}</span>
                             </div>
                             {isLunas ? (
-                              <span className="inline-block text-[11px] font-semibold px-2 py-0.5 rounded-full bg-[var(--green-soft)] text-[var(--green)] mt-1">
+                              <span className="shrink-0 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-[var(--green-soft)] text-[var(--green)]">
                                 Lunas
                               </span>
                             ) : (
-                              <span className="inline-block text-[11px] font-medium px-2 py-0.5 rounded-full bg-[var(--red-soft)] text-[var(--red)] mt-1">
+                              <span className="shrink-0 text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-[var(--red-soft)] text-[var(--red)]">
                                 Belum lunas
                               </span>
                             )}
                           </div>
-                          <svg
-                            width="16"
-                            height="16"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            className="text-[var(--ink-soft)] opacity-40 shrink-0 transition-transform duration-200 group-hover:translate-x-0.5 group-hover:opacity-70"
-                          >
-                            <path d="M9 18l6-6-6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                          </svg>
+                          {credit > 0 && (
+                            <div className="inline-flex items-center gap-1 text-[11px] text-[var(--gold)] mt-1 bg-[var(--gold-soft)] px-1.5 py-0.5 rounded-md truncate max-w-full">
+                              <svg width="9" height="9" viewBox="0 0 24 24" fill="none" className="shrink-0">
+                                <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2.5" />
+                                <path d="M12 7v5l3 2" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                              </svg>
+                              <span className="truncate">Saldo lebih {formatRupiah(credit)}</span>
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>
