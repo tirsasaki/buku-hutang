@@ -2,7 +2,7 @@
 // (mis. penambahan fitur baru seperti ganti tema), supaya cache lama
 // otomatis dibuang dan pengguna PWA yang sudah pernah install tidak
 // terjebak melihat versi lama.
-const CACHE_NAME = "buku-hutang-v2";
+const CACHE_NAME = "buku-hutang-v3";
 const APP_SHELL = ["/", "/manifest.json", "/icon-192.png", "/icon-512.png"];
 
 self.addEventListener("install", (event) => {
@@ -36,11 +36,20 @@ self.addEventListener("message", (event) => {
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
 
+  const url = new URL(event.request.url);
+
   // Cache API cuma mendukung skema http/https. Request dari browser extension
   // (mis. chrome-extension://) atau skema lain harus dilewati, kalau tidak
   // cache.put() akan throw dan memunculkan Uncaught TypeError di console.
-  const url = new URL(event.request.url);
   if (url.protocol !== "http:" && url.protocol !== "https:") return;
+
+  // Hanya tangani request same-origin (halaman, asset, API sendiri).
+  // Request ke domain lain (Google Fonts, Vercel Insights, dll) sengaja TIDAK
+  // di-intercept: kalau di-refetch lewat fetch() di dalam SW, request itu
+  // dicek ulang terhadap CSP connect-src (bukan font-src/style-src seperti
+  // request browser normal), jadi malah bisa keblokir walau domainnya sudah
+  // diizinkan di font-src/style-src. Biarkan browser yang urus langsung.
+  if (url.origin !== self.location.origin) return;
 
   event.respondWith(
     fetch(event.request)
@@ -49,6 +58,17 @@ self.addEventListener("fetch", (event) => {
         caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone)).catch(() => {});
         return response;
       })
-      .catch(() => caches.match(event.request))
+      .catch(async () => {
+        const cached = await caches.match(event.request);
+        if (cached) return cached;
+        // respondWith() wajib menerima Response yang valid — kalau cache pun
+        // kosong (offline + belum pernah dibuka), kembalikan Response error
+        // eksplisit alih-alih undefined (penyebab "Failed to convert value
+        // to 'Response'" di console).
+        return new Response("Offline dan halaman belum tersedia di cache.", {
+          status: 503,
+          statusText: "Service Unavailable",
+        });
+      })
   );
 });
