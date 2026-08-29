@@ -1,6 +1,32 @@
 import "./globals.css";
 import { Analytics } from "@vercel/analytics/next";
 import RegisterSW from "./RegisterSW";
+import { Special_Elite, Plus_Jakarta_Sans, IBM_Plex_Mono } from "next/font/google";
+
+// next/font men-download font ini sekali saat build dan menyajikannya dari
+// domain sendiri (self-hosted) — menghilangkan request eksternal ke
+// fonts.googleapis.com/fonts.gstatic.com yang sebelumnya jadi render-blocking
+// request paling mahal di laporan PageSpeed (~1.670ms).
+const specialElite = Special_Elite({
+  weight: "400",
+  subsets: ["latin"],
+  variable: "--font-special-elite",
+  display: "swap",
+});
+
+const plusJakartaSans = Plus_Jakarta_Sans({
+  weight: ["400", "500", "600", "700"],
+  subsets: ["latin"],
+  variable: "--font-plus-jakarta-sans",
+  display: "swap",
+});
+
+const ibmPlexMono = IBM_Plex_Mono({
+  weight: ["500", "600"],
+  subsets: ["latin"],
+  variable: "--font-ibm-plex-mono",
+  display: "swap",
+});
 
 export const metadata = {
   title: "Buku Hutang",
@@ -57,13 +83,12 @@ const themeInitScript = `
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="id" suppressHydrationWarning>
+    <html
+      lang="id"
+      suppressHydrationWarning
+      className={`${specialElite.variable} ${plusJakartaSans.variable} ${ibmPlexMono.variable}`}
+    >
       <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Special+Elite&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap"
-          rel="stylesheet"
-        />
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       </head>
       <body>

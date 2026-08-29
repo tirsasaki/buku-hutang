@@ -3,8 +3,8 @@ const cspDirectives = [
   // 'unsafe-inline' dibutuhkan untuk script init tema di app/layout.jsx.
   // 'unsafe-eval' dibutuhkan Next.js saat development (aman dihapus nanti kalau mau lebih ketat, tes dulu di build production).
   "script-src 'self' 'unsafe-inline' https://va.vercel-scripts.com",
-  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-  "font-src 'self' https://fonts.gstatic.com",
+  "style-src 'self' 'unsafe-inline'",
+  "font-src 'self'",
   "img-src 'self' data: blob:",
   // Ganti/tambahkan domain Supabase project kamu di sini kalau berbeda.
   // wss:// wajib ditulis terpisah dari https:// karena CSP menganggap beda skema,

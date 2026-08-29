@@ -62,7 +62,7 @@
 body {
   background-color: var(--paper);
   color: var(--ink);
-  font-family: "Plus Jakarta Sans", sans-serif;
+  font-family: var(--font-plus-jakarta-sans), sans-serif;
   min-height: 100vh;
 }
 
@@ -143,11 +143,11 @@ body::before {
 }
 
 .font-ledger {
-  font-family: "Special Elite", monospace;
+  font-family: var(--font-special-elite), monospace;
 }
 
 .font-mono-num {
-  font-family: "IBM Plex Mono", monospace;
+  font-family: var(--font-ibm-plex-mono), monospace;
 }
 
 @keyframes fadeIn {
