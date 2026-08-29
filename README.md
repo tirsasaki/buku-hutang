@@ -98,41 +98,22 @@ Banyak toko dan warung masih mencatat hutang pelanggan di buku kertas: mudah hil
 
 ```text
 app/
-├── page.jsx                       # Orkestrasi halaman utama (state UI + komposisi komponen/hook)
-├── components/                    # Komponen UI dashboard dan modal
-│   ├── ReceiptStrip.jsx           # Kartu struk transaksi selesai (presentational)
-│   ├── PayModal.jsx               # Modal pembayaran (cicilan/lunas)
-│   ├── UseCreditModal.jsx         # Modal pemakaian saldo lebih (kredit)
-│   ├── TransactionDetailModal.jsx # Modal detail transaksi piutang berjalan
-│   ├── EditPhoneModal.jsx
-│   ├── AddCustomerModal.jsx
-│   ├── AddDebtModal.jsx
-│   ├── CustomerPickerModal.jsx
-│   └── SignOutModal.jsx
-├── hooks/                         # Logic domain terpisah dari komponen halaman
-│   ├── useLedgerData.js           # Data Supabase dan realtime subscription
-│   ├── useDebtForm.js             # State & handler form tambah hutang (single + bulk)
-│   ├── usePayment.js              # State & handler pembayaran dan saldo lebih
-│   └── useReceipt.js              # Pembuatan teks struk & handler berbagi (WA, share, copy)
-├── layout.jsx                     # Root layout, metadata PWA, font, footer, analytics
-├── globals.css                    # Style global & variabel tema (light/dark)
-├── ThemeSwitcher.jsx              # Tombol pengubah tema terang/gelap
-├── RegisterSW.jsx                 # Registrasi & auto-update service worker (PWA)
-└── (auth)/                        # Route group khusus halaman publik (tidak login)
-    ├── login/page.jsx             # Halaman masuk
-    ├── signup/page.jsx            # Halaman pendaftaran akun
-    ├── forgot-password/page.jsx   # Permintaan reset password
-    └── reset-password/page.jsx    # Pengaturan password baru
+├── page.jsx                  # Halaman utama: daftar pelanggan, kasir, hutang, pembayaran
+├── layout.jsx                 # Root layout, metadata PWA, font, footer, analytics
+├── globals.css                 # Style global & variabel tema (light/dark)
+├── ThemeSwitcher.jsx           # Tombol pengubah tema terang/gelap
+├── RegisterSW.jsx              # Registrasi & auto-update service worker (PWA)
+├── login/page.jsx              # Halaman masuk
+├── signup/page.jsx             # Halaman pendaftaran akun
+├── forgot-password/page.jsx    # Permintaan reset password
+└── reset-password/page.jsx     # Pengaturan password baru
 lib/
-├── ledgerUtils.js                 # Perhitungan saldo, format, dan utilitas ledger (fungsi murni)
-└── supabaseClient.js              # Inisialisasi client Supabase
+└── supabaseClient.js           # Inisialisasi client Supabase
 public/
-├── manifest.json                  # Konfigurasi PWA (nama, ikon, warna tema)
-├── sw.js                          # Service worker (cache app shell, auto-update)
-└── icon-*.png                     # Ikon aplikasi berbagai ukuran
+├── manifest.json               # Konfigurasi PWA (nama, ikon, warna tema)
+├── sw.js                       # Service worker (cache app shell, auto-update)
+└── icon-*.png                  # Ikon aplikasi berbagai ukuran
 ```
-
-> Catatan: `(auth)` adalah [route group](https://nextjs.org/docs/app/building-your-application/routing/route-groups) Next.js — nama dalam kurung ini tidak muncul di URL, jadi halaman tetap diakses di `/login`, `/signup`, dst.
 
 ---
 
