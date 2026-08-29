@@ -7,7 +7,9 @@ const cspDirectives = [
   "font-src 'self' https://fonts.gstatic.com",
   "img-src 'self' data: blob:",
   // Ganti/tambahkan domain Supabase project kamu di sini kalau berbeda.
-  "connect-src 'self' https://walelatteylcsxhrpcis.supabase.co https://vitals.vercel-insights.com",
+  // wss:// wajib ditulis terpisah dari https:// karena CSP menganggap beda skema,
+  // dan Supabase Realtime (dipakai untuk live update) konek lewat WebSocket.
+  "connect-src 'self' https://walelatteylcsxhrpcis.supabase.co wss://walelatteylcsxhrpcis.supabase.co https://vitals.vercel-insights.com",
   "frame-ancestors 'self'",
   "base-uri 'self'",
   "form-action 'self'",

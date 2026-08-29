@@ -35,11 +35,18 @@ self.addEventListener("message", (event) => {
 // fallback ke cache hanya kalau benar-benar offline.
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
+
+  // Cache API cuma mendukung skema http/https. Request dari browser extension
+  // (mis. chrome-extension://) atau skema lain harus dilewati, kalau tidak
+  // cache.put() akan throw dan memunculkan Uncaught TypeError di console.
+  const url = new URL(event.request.url);
+  if (url.protocol !== "http:" && url.protocol !== "https:") return;
+
   event.respondWith(
     fetch(event.request)
       .then((response) => {
         const clone = response.clone();
-        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone)).catch(() => {});
         return response;
       })
       .catch(() => caches.match(event.request))
