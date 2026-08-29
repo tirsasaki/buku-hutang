@@ -9,6 +9,16 @@ import Link from "next/link";
 function formatRupiah(n) {
   return "Rp " + Math.round(n || 0).toLocaleString("id-ID");
 }
+// Format string angka mentah ("10000") jadi ada titik ribuan ("10.000") untuk ditampilkan di input.
+function formatThousands(value) {
+  const digits = String(value ?? "").replace(/[^0-9]/g, "");
+  if (digits === "") return "";
+  return digits.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+}
+// Buang titik ribuan dari input pengguna, sisakan angka mentah untuk disimpan di state.
+function stripThousands(value) {
+  return String(value ?? "").replace(/[^0-9]/g, "");
+}
 function remainingOf(item) {
   const paid = (item.payments || []).reduce((s, p) => s + Number(p.amount), 0);
   return Number(item.amount) - paid;
@@ -1190,11 +1200,11 @@ export default function HomePage() {
                         <div className="flex-[2]">
                           <label className="block text-[11px] text-[var(--ink-soft)] mb-1 font-medium">Harga per item (Rp)</label>
                           <input
-                            type="number"
-                            min="0"
-                            value={row.unitPrice}
+                            type="text"
+                            inputMode="numeric"
+                            value={formatThousands(row.unitPrice)}
                             disabled={(parseInt(row.qty) || 1) <= 1}
-                            onChange={(e) => updateBulkRow(idx, "unitPrice", e.target.value)}
+                            onChange={(e) => updateBulkRow(idx, "unitPrice", stripThousands(e.target.value))}
                             placeholder={(parseInt(row.qty) || 1) <= 1 ? "Otomatis (qty 1)" : ""}
                             className={`w-full px-3 py-2 rounded-xl border text-sm outline-none transition-colors ${
                               (parseInt(row.qty) || 1) <= 1
@@ -1207,11 +1217,11 @@ export default function HomePage() {
                       <div>
                         <label className="block text-[11px] text-[var(--ink-soft)] mb-1 font-medium">Total harga (Rp)</label>
                         <input
-                          type="number"
-                          min="0"
-                          value={row.amount}
+                          type="text"
+                          inputMode="numeric"
+                          value={formatThousands(row.amount)}
                           disabled={(parseInt(row.qty) || 1) > 1}
-                          onChange={(e) => updateBulkRow(idx, "amount", e.target.value)}
+                          onChange={(e) => updateBulkRow(idx, "amount", stripThousands(e.target.value))}
                           placeholder={(parseInt(row.qty) || 1) > 1 ? "Otomatis (qty x harga per item)" : ""}
                           className={`w-full px-3 py-2 rounded-xl border text-sm outline-none transition-colors ${
                             (parseInt(row.qty) || 1) > 1
@@ -2044,11 +2054,11 @@ export default function HomePage() {
             <div className="mb-3">
               <label className="block text-xs text-[var(--ink-soft)] mb-1 font-medium">Harga per item (Rp)</label>
               <input
-                type="number"
-                min="0"
-                value={debtUnitPrice}
+                type="text"
+                inputMode="numeric"
+                value={formatThousands(debtUnitPrice)}
                 disabled={(parseInt(debtQty) || 1) <= 1}
-                onChange={(e) => handleDebtUnitPriceChange(e.target.value)}
+                onChange={(e) => handleDebtUnitPriceChange(stripThousands(e.target.value))}
                 placeholder={(parseInt(debtQty) || 1) <= 1 ? "Otomatis (qty 1)" : ""}
                 className={`w-full px-3 py-2 rounded-lg border text-sm outline-none transition-colors ${
                   (parseInt(debtQty) || 1) <= 1
@@ -2060,11 +2070,11 @@ export default function HomePage() {
             <div className="mb-3">
               <label className="block text-xs text-[var(--ink-soft)] mb-1 font-medium">Total harga (Rp)</label>
               <input
-                type="number"
-                min="0"
-                value={debtAmount}
+                type="text"
+                inputMode="numeric"
+                value={formatThousands(debtAmount)}
                 disabled={(parseInt(debtQty) || 1) > 1}
-                onChange={(e) => handleDebtAmountChange(e.target.value)}
+                onChange={(e) => handleDebtAmountChange(stripThousands(e.target.value))}
                 placeholder={(parseInt(debtQty) || 1) > 1 ? "Otomatis (qty x harga per item)" : ""}
                 className={`w-full px-3 py-2 rounded-lg border text-sm outline-none transition-colors ${
                   (parseInt(debtQty) || 1) > 1
@@ -2251,10 +2261,10 @@ export default function HomePage() {
                     {isGroup || payMode === "lunas" ? "Uang diterima (Rp)" : "Jumlah dibayar (Rp)"}
                   </label>
                   <input
-                    type="number"
-                    min="0"
-                    value={payAmount}
-                    onChange={(e) => setPayAmount(e.target.value)}
+                    type="text"
+                    inputMode="numeric"
+                    value={formatThousands(payAmount)}
+                    onChange={(e) => setPayAmount(stripThousands(e.target.value))}
                     className="w-full px-3 py-2 rounded-lg border border-[var(--paper-line)] bg-[var(--paper)] text-sm outline-none focus:border-[var(--gold)] transition-colors"
                   />
                   {payAmountError && (
