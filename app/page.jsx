@@ -22,6 +22,10 @@ function normalizePhone(phone) {
   return digits;
 }
 
+// Nama kasir bawaan, dipakai jika pengguna belum mengatur nama kasir sendiri
+// lewat halaman Profil.
+const DEFAULT_KASIR = ["Saya", "Fuji", "Ibu"];
+
 // Menghasilkan warna khas yang konsisten untuk tiap nama pelanggan (hue tetap
 // sama selama nama tidak berubah), agar tetap kontras di tema terang maupun gelap.
 function customerColor(name) {
@@ -54,6 +58,7 @@ export default function HomePage() {
   const [statusFilter, setStatusFilter] = useState("semua");
   const [showSortMenu, setShowSortMenu] = useState(false);
   const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
+  const [kasirNames, setKasirNames] = useState(DEFAULT_KASIR);
   const [selectedCustomerId, setSelectedCustomerId] = useState(null);
   const [activeTab, setActiveTab] = useState("berjalan");
   const [homeTab, setHomeTab] = useState("pelanggan");
@@ -104,6 +109,8 @@ export default function HomePage() {
         router.push("/login");
       } else {
         setUserId(data.session.user.id);
+        const savedKasir = data.session.user.user_metadata?.kasir_names;
+        setKasirNames(Array.isArray(savedKasir) && savedKasir.length > 0 ? savedKasir : DEFAULT_KASIR);
         setCheckingAuth(false);
       }
     });
@@ -858,6 +865,29 @@ export default function HomePage() {
                 </svg>
               </Link>
               <div className="w-px h-5 bg-[var(--paper-line)]" />
+              <Link
+                href="/profile"
+                title="Profil"
+                className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 text-[var(--ink-soft)] hover:bg-[var(--surface-soft)] active:scale-90 transition-all duration-200"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                  <path
+                    d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  <path
+                    d="M4.5 20.5c1.5-4 4.5-6 7.5-6s6 2 7.5 6"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </Link>
+              <div className="w-px h-5 bg-[var(--paper-line)]" />
               <button
                 onClick={() => setShowSignOutConfirm(true)}
                 title="Keluar"
@@ -1090,7 +1120,7 @@ export default function HomePage() {
                   <div>
                     <label className="block text-xs text-[var(--ink-soft)] mb-1.5 font-medium">Kasir (opsional)</label>
                     <div className="flex gap-2 flex-wrap mb-2">
-                      {["Saya", "Fuji", "Ibu"].map((name) => (
+                      {kasirNames.map((name) => (
                         <div
                           key={name}
                           onClick={() => setBulkKasir(name)}
@@ -2035,7 +2065,7 @@ export default function HomePage() {
             <div className="mb-4">
               <label className="block text-xs text-[var(--ink-soft)] mb-1 font-medium">Kasir (opsional)</label>
               <div className="flex gap-2 flex-wrap mb-2">
-                {["Saya", "Fuji", "Ibu"].map((name) => (
+                {kasirNames.map((name) => (
                   <div
                     key={name}
                     onClick={() => setDebtKasir(name)}
@@ -2229,7 +2259,7 @@ export default function HomePage() {
             <div className="mb-4">
               <label className="block text-xs text-[var(--ink-soft)] mb-1 font-medium">Siapa yang menerima uangnya?</label>
               <div className="flex gap-2 flex-wrap mt-1">
-                {["Saya", "Fuji", "Ibu"].map((name) => (
+                {kasirNames.map((name) => (
                   <div
                     key={name}
                     onClick={() => {
@@ -2289,7 +2319,7 @@ export default function HomePage() {
             <div className="mb-4">
               <label className="block text-xs text-[var(--ink-soft)] mb-1 font-medium">Siapa yang memproses ini?</label>
               <div className="flex gap-2 flex-wrap mt-1">
-                {["Saya", "Fuji", "Ibu"].map((name) => (
+                {kasirNames.map((name) => (
                   <div
                     key={name}
                     onClick={() => {
