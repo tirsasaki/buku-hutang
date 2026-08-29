@@ -1,14 +1,15 @@
+const isDev = process.env.NODE_ENV !== 'production';
+
 const cspDirectives = [
   "default-src 'self'",
   // 'unsafe-inline' dibutuhkan untuk script init tema di app/layout.jsx.
-  // 'unsafe-eval' dibutuhkan Next.js saat development (aman dihapus nanti kalau mau lebih ketat, tes dulu di build production).
-  "script-src 'self' 'unsafe-inline' https://va.vercel-scripts.com",
+  // 'unsafe-eval' HANYA ditambahkan saat development karena Next.js Fast
+  // Refresh/HMR memakai eval(); di production directive ini tidak disisipkan
+  // supaya CSP tetap ketat.
+  `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""} https://va.vercel-scripts.com`,
   "style-src 'self' 'unsafe-inline'",
   "font-src 'self'",
   "img-src 'self' data: blob:",
-  // Ganti/tambahkan domain Supabase project kamu di sini kalau berbeda.
-  // wss:// wajib ditulis terpisah dari https:// karena CSP menganggap beda skema,
-  // dan Supabase Realtime (dipakai untuk live update) konek lewat WebSocket.
   "connect-src 'self' https://walelatteylcsxhrpcis.supabase.co wss://walelatteylcsxhrpcis.supabase.co https://vitals.vercel-insights.com",
   "frame-ancestors 'self'",
   "base-uri 'self'",

@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../lib/supabaseClient";
 import ThemeSwitcher from "./ThemeSwitcher";
+import Link from "next/link";
 
 function formatRupiah(n) {
   return "Rp " + Math.round(n || 0).toLocaleString("id-ID");
@@ -840,6 +841,22 @@ export default function HomePage() {
             </div>
             <div className="flex items-center gap-0.5 bg-[var(--card)] border border-[var(--paper-line)] rounded-full p-1 shadow-sm shrink-0">
               <ThemeSwitcher variant="plain" />
+              <div className="w-px h-5 bg-[var(--paper-line)]" />
+              <Link
+                href="/backup"
+                title="Backup & Restore"
+                className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 text-[var(--ink-soft)] hover:bg-[var(--surface-soft)] active:scale-90 transition-all duration-200"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                  <path
+                    d="M12 3v12m0 0-4-4m4 4 4-4M5 21h14"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </Link>
               <div className="w-px h-5 bg-[var(--paper-line)]" />
               <button
                 onClick={() => setShowSignOutConfirm(true)}
