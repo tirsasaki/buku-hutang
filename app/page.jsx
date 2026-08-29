@@ -1719,24 +1719,34 @@ export default function HomePage() {
                 </div>
               )}
               {(() => {
-                // Kelompokkan barang yang selesai berdasarkan nomor invoice (satu invoice
-                // = satu struk belanja). Data lama sebelum fitur invoice dibuat belum
-                // punya invoice_no, jadi dikelompokkan berdasarkan tanggal pembayaran
-                // lunas terakhir & kasir yang menerima seperti sebelumnya.
+                // Kelompokkan barang yang selesai berdasarkan MOMEN PEMBAYARAN (satu aksi
+                // pelunasan = satu struk), bukan berdasarkan invoice asal. Ini penting
+                // karena "Tandai semua lunas" bisa melunasi barang dari beberapa invoice/
+                // tanggal berbeda sekaligus — barang-barang itu harus tetap tampil sebagai
+                // SATU struk gabungan, bukan dipecah per invoice asal.
+                //
+                // Beberapa baris payment yang dibuat lewat satu insert batch (mis. bayar
+                // banyak item sekaligus) punya nilai paid_at yang persis sama (Postgres
+                // mengevaluasi now() sekali per statement), jadi timestamp itu dipakai
+                // sebagai kunci pengelompokan. Item lama tanpa data payment (kasus langka)
+                // jatuh ke kunci per-item supaya tidak salah gabung.
                 const groups = [];
                 const groupByKey = new Map();
                 doneItems.forEach((it) => {
                   const lastPayment = (it.payments || []).slice().sort((a, b) => new Date(b.paid_at) - new Date(a.paid_at))[0];
-                  const lunasDate = lastPayment ? new Date(lastPayment.paid_at) : new Date(it.date);
+                  const paidAtIso = lastPayment ? lastPayment.paid_at : null;
+                  const lunasDate = paidAtIso ? new Date(paidAtIso) : new Date(it.date);
                   const lunasDateStr = lunasDate.toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" });
                   const receivedBy = lastPayment ? lastPayment.received_by : null;
-                  const key = it.invoice_no || `${lunasDateStr}__${receivedBy || ""}`;
+                  const key = paidAtIso ? `${paidAtIso}__${receivedBy || ""}` : `no-payment__${it.id}`;
                   if (!groupByKey.has(key)) {
-                    const group = { key, lunasDate, lunasDateStr, receivedBy, invoiceNo: it.invoice_no || null, items: [] };
+                    const group = { key, lunasDate, lunasDateStr, receivedBy, invoiceNos: new Set(), items: [] };
                     groupByKey.set(key, group);
                     groups.push(group);
                   }
-                  groupByKey.get(key).items.push(it);
+                  const group = groupByKey.get(key);
+                  if (it.invoice_no) group.invoiceNos.add(it.invoice_no);
+                  group.items.push(it);
                 });
 
                 // Struk terbaru tampil paling atas.
@@ -1744,6 +1754,12 @@ export default function HomePage() {
 
                 return groups.map((g) => {
                   const groupTotal = g.items.reduce((s, it) => s + Number(it.amount || 0), 0);
+                  // Satu struk gabungan bisa berasal dari beberapa invoice asal (mis. hutang
+                  // dari 3 tanggal berbeda yang dilunasi sekaligus). Tampilkan nomornya kalau
+                  // cuma dari 1 invoice; kalau lebih dari 1, tampilkan jumlahnya saja supaya
+                  // tetap ringkas seperti struk asli.
+                  const invoiceNoDisplay =
+                    g.invoiceNos.size === 0 ? "-" : g.invoiceNos.size === 1 ? [...g.invoiceNos][0] : `${g.invoiceNos.size} invoice digabung`;
                   return (
                     <div
                       key={g.key}
@@ -1752,7 +1768,7 @@ export default function HomePage() {
                       {/* Kepala struk: nomor invoice, tanggal selesai & nama kasir */}
                       <div className="px-3.5 pt-3.5 pb-2.5 text-center border-b border-dashed border-[var(--paper-line)]">
                         <div className="text-[10px] tracking-[0.25em] text-[var(--ink-soft)] uppercase">Struk Pembayaran</div>
-                        <div className="text-xs font-semibold mt-1.5">{g.invoiceNo || "-"}</div>
+                        <div className="text-xs font-semibold mt-1.5">{invoiceNoDisplay}</div>
                         <div className="text-sm font-semibold mt-0.5">{g.lunasDateStr}</div>
                         <div className="text-[11px] text-[var(--ink-soft)] mt-0.5">
                           Kasir: {g.receivedBy || "-"}
