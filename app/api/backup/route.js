@@ -28,7 +28,7 @@ export async function POST(request) {
 
     if (!process.env.GITHUB_TOKEN || !process.env.GITHUB_BACKUP_REPO) {
       return NextResponse.json(
-        { error: "GITHUB_TOKEN / GITHUB_BACKUP_REPO belum diatur di environment server." },
+        { error: "Fitur backup belum dikonfigurasi di server. Hubungi pengelola aplikasi." },
         { status: 500 }
       );
     }

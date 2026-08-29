@@ -48,7 +48,7 @@ export default function BackupPage() {
       const now = new Date().toISOString();
       localStorage.setItem(LAST_BACKUP_KEY, now);
       setLastBackup(now);
-      setStatus({ type: "ok", text: `Backup berhasil (${json.totalRows} baris data) disimpan ke GitHub.` });
+      setStatus({ type: "ok", text: `Backup berhasil (${json.totalRows} baris data) tersimpan dengan aman.` });
     } catch (e) {
       setStatus({ type: "error", text: e.message });
     } finally {
@@ -86,7 +86,7 @@ export default function BackupPage() {
       <div className="flex items-center justify-between mb-5 gap-3">
         <div>
           <h1 className="font-ledger text-2xl leading-none">Backup &amp; Restore</h1>
-          <p className="text-xs text-[var(--ink-soft)] mt-1.5">Simpan &amp; pulihkan data lewat GitHub</p>
+          <p className="text-xs text-[var(--ink-soft)] mt-1.5">Simpan &amp; pulihkan data ke penyimpanan cadangan</p>
         </div>
         <div className="flex items-center gap-2">
           <ThemeSwitcher variant="plain" />
@@ -105,8 +105,9 @@ export default function BackupPage() {
       <div className="bg-[var(--card)] border border-[var(--paper-line)] rounded-[18px] p-4 mb-4 shadow-sm">
         <p className="text-xs text-[var(--ink-soft)] leading-relaxed">
           Data diambil dari akun yang sedang login (dilindungi Row Level Security Supabase), lalu server aplikasi
-          menyimpannya sebagai satu file JSON ke repository GitHub yang sudah dikonfigurasi lewat environment
-          variable. Token GitHub tidak pernah dikirim ke atau disimpan di browser.
+          menyimpannya sebagai satu file cadangan di penyimpanan yang sudah dikonfigurasi khusus untuk aplikasi
+          ini. Proses ini berjalan sepenuhnya di server &mdash; kredensial penyimpanan tidak pernah dikirim ke
+          atau disimpan di perangkat Anda.
         </p>
       </div>
 
@@ -128,7 +129,7 @@ export default function BackupPage() {
           disabled={busy !== null}
           className="w-full py-3 rounded-xl bg-[var(--ink)] text-[var(--card)] text-sm font-semibold shadow-sm active:scale-[0.99] transition-all disabled:opacity-50"
         >
-          {busy === "backup" ? "Membackup data…" : "⬆️ Backup ke GitHub"}
+          {busy === "backup" ? "Membackup data…" : "⬆️ Backup Data"}
         </button>
 
         <button
@@ -144,7 +145,7 @@ export default function BackupPage() {
             ? "Memulihkan data…"
             : confirmRestore
             ? "Yakin? Tekan sekali lagi untuk restore"
-            : "⬇️ Restore dari GitHub"}
+            : "⬇️ Restore Data"}
         </button>
         {confirmRestore && (
           <button
