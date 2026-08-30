@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { remainingOf, formatRupiah } from "../lib/debt-utils";
+import { notifyError } from "../lib/notify";
 
 // Menggabungkan seluruh alur "bayar hutang" (baik satu barang, satu grup
 // transaksi, maupun tandai-semua-lunas) dan "pakai saldo lebih untuk bayar
@@ -55,14 +56,27 @@ export function usePaymentFlow({ debtItems, debtActions, fetchAll, selectedCusto
         amount: remainingOf(it),
         received_by: receivedBy,
       }));
-      await debtActions.recordPayments(rows);
+      const { error: payError } = await debtActions.recordPayments(rows);
+      if (payError) {
+        notifyError("Gagal mencatat pembayaran: " + payError.message);
+        return;
+      }
 
       if (overpay > 0) {
-        await debtActions.recordCreditTransaction({
+        const { error: creditError } = await debtActions.recordCreditTransaction({
           customerId: selectedCustomerId,
           amount: overpay,
           note: "Kelebihan bayar - tandai lunas",
         });
+        if (creditError) {
+          notifyError(
+            "Pembayaran tersimpan, tapi gagal mencatat kelebihan bayar sebagai saldo lebih: " + creditError.message
+          );
+          setPayTarget(null);
+          onGroupPaid?.();
+          fetchAll();
+          return;
+        }
       }
 
       setPayTarget(null);
@@ -79,18 +93,30 @@ export function usePaymentFlow({ debtItems, debtActions, fetchAll, selectedCusto
 
     const { target, actualPayment, overpay, receivedBy } = payload;
 
-    await debtActions.recordPayments({
+    const { error: payError } = await debtActions.recordPayments({
       debt_item_id: target.id,
       amount: actualPayment,
       received_by: receivedBy,
     });
+    if (payError) {
+      notifyError("Gagal mencatat pembayaran: " + payError.message);
+      return;
+    }
 
     if (overpay > 0) {
-      await debtActions.recordCreditTransaction({
+      const { error: creditError } = await debtActions.recordCreditTransaction({
         customerId: selectedCustomerId,
         amount: overpay,
         note: `Kelebihan bayar${target.item ? " - " + target.item : ""}`,
       });
+      if (creditError) {
+        notifyError(
+          "Pembayaran tersimpan, tapi gagal mencatat kelebihan bayar sebagai saldo lebih: " + creditError.message
+        );
+        setPayTarget(null);
+        fetchAll();
+        return;
+      }
     }
 
     setPayTarget(null);
@@ -144,12 +170,24 @@ export function usePaymentFlow({ debtItems, debtActions, fetchAll, selectedCusto
     }
 
     if (totalUsed > 0) {
-      await debtActions.recordPayments(paymentRows);
-      await debtActions.recordCreditTransaction({
+      const { error: payError } = await debtActions.recordPayments(paymentRows);
+      if (payError) {
+        notifyError("Gagal memakai saldo lebih untuk membayar hutang: " + payError.message);
+        return;
+      }
+      const { error: creditError } = await debtActions.recordCreditTransaction({
         customerId: selectedCustomerId,
         amount: -totalUsed,
         note: "Dipakai untuk membayar hutang",
       });
+      if (creditError) {
+        notifyError(
+          "Pembayaran tersimpan, tapi gagal memperbarui saldo lebih: " + creditError.message
+        );
+        setShowUseCredit(false);
+        fetchAll();
+        return;
+      }
     }
 
     setShowUseCredit(false);

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { notifyError } from "../lib/notify";
 
 // Menggabungkan seluruh handler CRUD sederhana untuk pelanggan & hutang
 // (tambah pelanggan, tambah hutang satu/banyak barang, hapus hutang, hapus
@@ -11,15 +12,27 @@ import { useState } from "react";
 // deleteCustomer tidak menyentuh state selectedCustomerId di page.jsx
 // secara langsung -- ia memanggil onCustomerDeleted() sebagai callback,
 // supaya hook ini tidak perlu tahu detail state yang dikelola di luar dirinya.
+//
+// Penghapusan (hutang & pelanggan) tidak lagi pakai confirm() browser
+// bawaan. Sebagai gantinya hook ini menyimpan "target yang menunggu
+// konfirmasi" (pendingDeleteItemId / pendingDeleteCustomer). page.jsx
+// merender <ConfirmModal> berdasarkan target itu, mirip pola
+// showSignOutConfirm + SignOutConfirmModal yang sudah ada.
 export function useCustomerCrud({ debtActions, fetchAll, debtItems, selectedCustomerId, onCustomerDeleted }) {
   const [showAddCust, setShowAddCust] = useState(false);
   const [showEditPhone, setShowEditPhone] = useState(false);
   const [showAddDebt, setShowAddDebt] = useState(false);
+  const [pendingDeleteItemId, setPendingDeleteItemId] = useState(null);
+  const [pendingDeleteCustomer, setPendingDeleteCustomer] = useState(null);
 
   // Dipanggil oleh AddCustomerModal saat form valid & disubmit.
   // payload = { name, phone }
   async function handleAddCustomer(payload) {
-    await debtActions.addCustomer(payload);
+    const { error } = await debtActions.addCustomer(payload);
+    if (error) {
+      notifyError("Gagal menambah pelanggan: " + error.message);
+      return;
+    }
     setShowAddCust(false);
     fetchAll();
   }
@@ -28,7 +41,7 @@ export function useCustomerCrud({ debtActions, fetchAll, debtItems, selectedCust
   // payload = { item, qty, amount, date, kasir }
   async function handleConfirmAddDebt(payload) {
     const invoiceNo = await debtActions.getNextInvoiceNo(payload.date, debtItems);
-    await debtActions.addDebt({
+    const { error } = await debtActions.addDebt({
       customerId: selectedCustomerId,
       item: payload.item,
       qty: payload.qty,
@@ -37,6 +50,10 @@ export function useCustomerCrud({ debtActions, fetchAll, debtItems, selectedCust
       kasir: payload.kasir,
       invoiceNo,
     });
+    if (error) {
+      notifyError("Gagal menambah catatan hutang: " + error.message);
+      return;
+    }
     setShowAddDebt(false);
     fetchAll();
   }
@@ -55,25 +72,65 @@ export function useCustomerCrud({ debtActions, fetchAll, debtItems, selectedCust
       invoice_no: invoiceNo,
     }));
 
-    await debtActions.addDebtBulk(rows);
+    const { error } = await debtActions.addDebtBulk(rows);
+    if (error) {
+      notifyError("Gagal menambah catatan hutang: " + error.message);
+      return;
+    }
     fetchAll();
   }
 
-  async function deleteDebtItem(itemId) {
-    if (!confirm("Hapus catatan hutang ini beserta riwayat pembayarannya?")) return;
-    await debtActions.deleteDebtItem(itemId);
+  // Dipanggil oleh tombol "Hapus" pada catatan hutang -- membuka ConfirmModal,
+  // belum menghapus apa pun.
+  function requestDeleteDebtItem(itemId) {
+    setPendingDeleteItemId(itemId);
+  }
+
+  function cancelDeleteDebtItem() {
+    setPendingDeleteItemId(null);
+  }
+
+  // Dipanggil oleh ConfirmModal saat tombol konfirmasi diklik.
+  async function confirmDeleteDebtItem() {
+    const itemId = pendingDeleteItemId;
+    setPendingDeleteItemId(null);
+    const { error } = await debtActions.deleteDebtItem(itemId);
+    if (error) {
+      notifyError("Gagal menghapus catatan hutang: " + error.message);
+      return;
+    }
     fetchAll();
   }
 
-  async function deleteCustomer(cust) {
-    if (!confirm(`Hapus pelanggan "${cust.name}" beserta seluruh riwayat hutangnya? Tindakan ini tidak bisa dibatalkan.`)) return;
-    await debtActions.deleteCustomer(cust.id);
+  // Dipanggil oleh tombol "Hapus pelanggan ini" -- membuka ConfirmModal,
+  // belum menghapus apa pun.
+  function requestDeleteCustomer(cust) {
+    setPendingDeleteCustomer(cust);
+  }
+
+  function cancelDeleteCustomer() {
+    setPendingDeleteCustomer(null);
+  }
+
+  // Dipanggil oleh ConfirmModal saat tombol konfirmasi diklik.
+  async function confirmDeleteCustomer() {
+    const cust = pendingDeleteCustomer;
+    setPendingDeleteCustomer(null);
+    const { error } = await debtActions.deleteCustomer(cust.id);
+    if (error) {
+      notifyError("Gagal menghapus pelanggan: " + error.message);
+      return;
+    }
     onCustomerDeleted?.();
     fetchAll();
   }
 
   async function handleSavePhone(phone) {
-    await debtActions.updateCustomerPhone(selectedCustomerId, phone);
+    const { error } = await debtActions.updateCustomerPhone(selectedCustomerId, phone);
+    if (error) {
+      notifyError("Gagal menyimpan nomor WA: " + error.message);
+      return;
+    }
     setShowEditPhone(false);
     fetchAll();
   }
@@ -88,8 +145,14 @@ export function useCustomerCrud({ debtActions, fetchAll, debtItems, selectedCust
     handleAddCustomer,
     handleConfirmAddDebt,
     handleConfirmAddDebtBulk,
-    deleteDebtItem,
-    deleteCustomer,
+    pendingDeleteItemId,
+    requestDeleteDebtItem,
+    cancelDeleteDebtItem,
+    confirmDeleteDebtItem,
+    pendingDeleteCustomer,
+    requestDeleteCustomer,
+    cancelDeleteCustomer,
+    confirmDeleteCustomer,
     handleSavePhone,
   };
 }

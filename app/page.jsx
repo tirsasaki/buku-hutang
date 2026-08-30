@@ -11,6 +11,7 @@ import { useCustomerCrud } from "../hooks/useCustomerCrud";
 import AppHeader from "../components/AppHeader";
 import HomeSummary from "../components/HomeSummary";
 import SignOutConfirmModal from "../components/SignOutConfirmModal";
+import ConfirmModal from "../components/ConfirmModal";
 import AddCustomerModal from "../components/AddCustomerModal";
 import TransactionDetailModal from "../components/TransactionDetailModal";
 import UseCreditModal from "../components/UseCreditModal";
@@ -66,8 +67,14 @@ export default function HomePage() {
     handleAddCustomer,
     handleConfirmAddDebt,
     handleConfirmAddDebtBulk,
-    deleteDebtItem,
-    deleteCustomer,
+    pendingDeleteItemId,
+    requestDeleteDebtItem,
+    cancelDeleteDebtItem,
+    confirmDeleteDebtItem,
+    pendingDeleteCustomer,
+    requestDeleteCustomer,
+    cancelDeleteCustomer,
+    confirmDeleteCustomer,
     handleSavePhone,
   } = useCustomerCrud({
     debtActions,
@@ -206,7 +213,7 @@ export default function HomePage() {
 
           <div className="flex justify-center mt-6 mb-20">
             <button
-              onClick={() => deleteCustomer(selectedCustomer)}
+              onClick={() => requestDeleteCustomer(selectedCustomer)}
               className="inline-flex items-center gap-1.5 text-sm text-[var(--ink-soft)] hover:text-[var(--red)] hover:bg-[var(--red-soft)] px-3.5 py-2 rounded-full transition-colors duration-200 select-none"
             >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
@@ -246,13 +253,35 @@ export default function HomePage() {
         />
       )}
 
+      {/* Modal: Konfirmasi hapus catatan hutang */}
+      {pendingDeleteItemId && (
+        <ConfirmModal
+          title="Hapus catatan hutang?"
+          message="Catatan hutang ini beserta riwayat pembayarannya akan dihapus."
+          confirmLabel="Ya, hapus"
+          onConfirm={confirmDeleteDebtItem}
+          onClose={cancelDeleteDebtItem}
+        />
+      )}
+
+      {/* Modal: Konfirmasi hapus pelanggan */}
+      {pendingDeleteCustomer && (
+        <ConfirmModal
+          title="Hapus pelanggan?"
+          message={`Pelanggan "${pendingDeleteCustomer.name}" beserta seluruh riwayat hutangnya akan dihapus. Tindakan ini tidak bisa dibatalkan.`}
+          confirmLabel="Ya, hapus"
+          onConfirm={confirmDeleteCustomer}
+          onClose={cancelDeleteCustomer}
+        />
+      )}
+
       {/* Modal: Detail transaksi belanja (piutang) berjalan */}
       {detailGroup && (
         <TransactionDetailModal
           group={detailGroup}
           onClose={() => setDetailGroupKey(null)}
           onPayItem={openPayModal}
-          onDeleteItem={deleteDebtItem}
+          onDeleteItem={requestDeleteDebtItem}
           onMarkGroupPaid={openGroupLunasModal}
         />
       )}
