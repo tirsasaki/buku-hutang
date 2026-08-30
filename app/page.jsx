@@ -15,6 +15,7 @@ import ConfirmModal from "../components/ConfirmModal";
 import AddCustomerModal from "../components/AddCustomerModal";
 import TransactionDetailModal from "../components/TransactionDetailModal";
 import UseCreditModal from "../components/UseCreditModal";
+import PartialPaymentModal from "../components/PartialPaymentModal";
 import EditCustomerModal from "../components/EditCustomerModal";
 import PaymentModal from "../components/PaymentModal";
 import AddDebtModal from "../components/AddDebtModal";
@@ -115,6 +116,10 @@ export default function HomePage() {
     openUseCreditModal,
     closeUseCreditModal,
     handleConfirmUseCredit,
+    showBulkPartial,
+    openBulkPartialModal,
+    closeBulkPartialModal,
+    handleConfirmBulkPartial,
   } = usePaymentFlow({
     debtItems,
     debtActions,
@@ -197,6 +202,7 @@ export default function HomePage() {
             onCopyText={() => copyReceiptText(selectedCustomer, debtItems)}
             onShareWa={() => shareReceiptToWa(selectedCustomer, debtItems)}
             onMarkAllPaid={openBulkLunasModal}
+            onPartialPay={openBulkPartialModal}
             onUseCredit={openUseCreditModal}
             showUseCreditButton={creditBalanceForCustomer(selectedCustomer.id) > 0 && balanceForCustomer(selectedCustomer.id) > 0}
           />
@@ -309,6 +315,17 @@ export default function HomePage() {
           kasirNames={kasirNames}
           onConfirm={handleConfirmUseCredit}
           onClose={closeUseCreditModal}
+        />
+      )}
+
+      {/* Modal: Bayar sebagian (lintas item, hutang paling lama dilunasi dulu) */}
+      {showBulkPartial && selectedCustomer && (
+        <PartialPaymentModal
+          debtItems={debtItems}
+          selectedCustomerId={selectedCustomerId}
+          kasirNames={kasirNames}
+          onConfirm={handleConfirmBulkPartial}
+          onClose={closeBulkPartialModal}
         />
       )}
     </div>

@@ -9,10 +9,11 @@
 // Props:
 // - onShare(), onCopyText(), onShareWa(): aksi bagikan tagihan
 // - onMarkAllPaid(): dipanggil saat "Tandai semua lunas" diklik
+// - onPartialPay(): dipanggil saat "Bayar sebagian" (di sebelah "Tandai semua lunas") diklik
 // - onUseCredit(): dipanggil saat "Pakai saldo lebih" diklik
 // - showUseCreditButton: apakah tombol "Pakai saldo lebih" ditampilkan
 //     (pelanggan punya saldo lebih DAN masih punya hutang aktif)
-export default function CustomerActions({ onShare, onCopyText, onShareWa, onMarkAllPaid, onUseCredit, showUseCreditButton }) {
+export default function CustomerActions({ onShare, onCopyText, onShareWa, onMarkAllPaid, onPartialPay, onUseCredit, showUseCreditButton }) {
   return (
     <>
       <div className="flex gap-2.5 mb-4">
@@ -62,15 +63,27 @@ export default function CustomerActions({ onShare, onCopyText, onShareWa, onMark
           Pelunasan
         </div>
         <div className="flex flex-col gap-2.5">
-          <button
-            onClick={onMarkAllPaid}
-            className="w-full flex items-center justify-center gap-1.5 py-3 rounded-2xl bg-[var(--green-soft)] border border-transparent text-[var(--green)] text-sm font-semibold shadow-sm hover:brightness-[0.97] active:scale-[0.98] transition-all duration-200"
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-              <path d="M20 6 9 17l-5-5" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-            Tandai semua lunas
-          </button>
+          <div className="flex gap-2.5">
+            <button
+              onClick={onMarkAllPaid}
+              className="flex-1 flex items-center justify-center gap-1.5 py-3 rounded-2xl bg-[var(--green-soft)] border border-transparent text-[var(--green)] text-sm font-semibold shadow-sm hover:brightness-[0.97] active:scale-[0.98] transition-all duration-200"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                <path d="M20 6 9 17l-5-5" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              Tandai semua lunas
+            </button>
+
+            <button
+              onClick={onPartialPay}
+              className="flex-1 flex items-center justify-center gap-1.5 py-3 rounded-2xl bg-[var(--card)] border border-[var(--paper-line)] text-[var(--ink)] text-sm font-semibold shadow-sm hover:shadow active:scale-[0.98] transition-all duration-200"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                <path d="M12 3v18M6 8h9a3 3 0 0 1 0 6H9a3 3 0 0 0 0 6h9" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              Bayar sebagian
+            </button>
+          </div>
 
           {showUseCreditButton && (
             <button

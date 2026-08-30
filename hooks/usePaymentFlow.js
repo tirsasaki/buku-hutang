@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { remainingOf, formatRupiah } from "../lib/debt-utils";
+import { remainingOf, formatRupiah, allocateOldestFirst } from "../lib/debt-utils";
 import { notifyError } from "../lib/notify";
 
 // Menggabungkan seluruh alur "bayar hutang" (baik satu barang, satu grup
@@ -18,6 +18,7 @@ export function usePaymentFlow({ debtItems, debtActions, fetchAll, selectedCusto
   const [payTarget, setPayTarget] = useState(null);
   const [payInitialMode, setPayInitialMode] = useState("partial");
   const [showUseCredit, setShowUseCredit] = useState(false);
+  const [showBulkPartial, setShowBulkPartial] = useState(false);
 
   function openPayModal(item, mode) {
     setPayTarget(item);
@@ -36,6 +37,73 @@ export function usePaymentFlow({ debtItems, debtActions, fetchAll, selectedCusto
     }
     setPayTarget("ALL");
     setPayInitialMode("lunas");
+  }
+
+  // Buka modal "Bayar sebagian" tingkat pelanggan (dipicu tombol di sebelah
+  // "Tandai semua lunas"). Alokasi ke item mana yang dilunasi/dicicil
+  // ditentukan lewat allocateOldestFirst() saat form disubmit.
+  function openBulkPartialModal() {
+    const items = debtItems.filter((i) => i.customer_id === selectedCustomerId && remainingOf(i) > 0);
+    if (items.length === 0) {
+      alert("Pelanggan ini tidak memiliki hutang aktif.");
+      return;
+    }
+    setShowBulkPartial(true);
+  }
+
+  function closeBulkPartialModal() {
+    setShowBulkPartial(false);
+  }
+
+  // Dipanggil oleh PartialPaymentModal saat form valid & disubmit. Jumlah
+  // yang dibayar dialokasikan ke hutang aktif pelanggan, yang paling lama
+  // (tanggal terlama) dilunasi lebih dulu; kelebihan (kalau ada) disimpan
+  // sebagai saldo lebih.
+  async function handleConfirmBulkPartial({ amount, receivedBy }) {
+    const items = debtItems.filter((i) => i.customer_id === selectedCustomerId && remainingOf(i) > 0);
+    const { allocations, totalUsed, leftover } = allocateOldestFirst(items, amount);
+
+    if (totalUsed <= 0) {
+      setShowBulkPartial(false);
+      return;
+    }
+
+    const rows = allocations.map(({ item, amount: use }) => ({
+      debt_item_id: item.id,
+      amount: use,
+      received_by: receivedBy,
+    }));
+
+    const { error: payError } = await debtActions.recordPayments(rows);
+    if (payError) {
+      notifyError("Gagal mencatat pembayaran: " + payError.message);
+      return;
+    }
+
+    if (leftover > 0) {
+      const { error: creditError } = await debtActions.recordCreditTransaction({
+        customerId: selectedCustomerId,
+        amount: leftover,
+        note: "Kelebihan bayar - bayar sebagian",
+      });
+      if (creditError) {
+        notifyError(
+          "Pembayaran tersimpan, tapi gagal mencatat kelebihan bayar sebagai saldo lebih: " + creditError.message
+        );
+        setShowBulkPartial(false);
+        fetchAll();
+        return;
+      }
+    }
+
+    setShowBulkPartial(false);
+    fetchAll();
+
+    if (leftover > 0) {
+      alert(
+        `Uang diterima melebihi total tagihan sebesar ${formatRupiah(leftover)}. Kelebihannya sudah disimpan sebagai saldo lebih pelanggan ini, dan bisa dipakai untuk pembayaran berikutnya.`
+      );
+    }
   }
 
   function openGroupLunasModal(items) {
@@ -151,23 +219,14 @@ export function usePaymentFlow({ debtItems, debtActions, fetchAll, selectedCusto
 
   // Dipanggil oleh UseCreditModal saat form valid & disubmit.
   async function handleConfirmUseCredit(receivedBy) {
-    let available = getCreditBalance(selectedCustomerId);
-    const items = debtItems
-      .filter((i) => i.customer_id === selectedCustomerId && remainingOf(i) > 0)
-      .sort((a, b) => new Date(a.date) - new Date(b.date));
-
-    const paymentRows = [];
-    let totalUsed = 0;
-    for (const it of items) {
-      if (available <= 0) break;
-      const rem = remainingOf(it);
-      const use = Math.min(available, rem);
-      if (use > 0) {
-        paymentRows.push({ debt_item_id: it.id, amount: use, received_by: receivedBy });
-        available -= use;
-        totalUsed += use;
-      }
-    }
+    const available = getCreditBalance(selectedCustomerId);
+    const items = debtItems.filter((i) => i.customer_id === selectedCustomerId && remainingOf(i) > 0);
+    const { allocations, totalUsed } = allocateOldestFirst(items, available);
+    const paymentRows = allocations.map(({ item, amount: use }) => ({
+      debt_item_id: item.id,
+      amount: use,
+      received_by: receivedBy,
+    }));
 
     if (totalUsed > 0) {
       const { error: payError } = await debtActions.recordPayments(paymentRows);
@@ -206,5 +265,9 @@ export function usePaymentFlow({ debtItems, debtActions, fetchAll, selectedCusto
     openUseCreditModal,
     closeUseCreditModal,
     handleConfirmUseCredit,
+    showBulkPartial,
+    openBulkPartialModal,
+    closeBulkPartialModal,
+    handleConfirmBulkPartial,
   };
 }
