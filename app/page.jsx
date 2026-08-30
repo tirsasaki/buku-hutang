@@ -6,6 +6,8 @@ import { supabase } from "../lib/supabaseClient";
 import { useLedgerData } from "../hooks/useLedgerData";
 import { useDebtActions } from "../hooks/useDebtActions";
 import { usePaymentFlow } from "../hooks/usePaymentFlow";
+import { useCustomerDerivedData } from "../hooks/useCustomerDerivedData";
+import { useCustomerCrud } from "../hooks/useCustomerCrud";
 import AppHeader from "../components/AppHeader";
 import HomeSummary from "../components/HomeSummary";
 import SignOutConfirmModal from "../components/SignOutConfirmModal";
@@ -20,10 +22,8 @@ import CustomerTab from "../components/CustomerTab";
 import CustomerDetailHeader from "../components/CustomerDetailHeader";
 import CustomerActions from "../components/CustomerActions";
 import DebtHistoryTabs from "../components/DebtHistoryTabs";
-import {
-  remainingOf,
-  DEFAULT_KASIR,
-} from "../lib/debt-utils";
+import FabButton from "../components/FabButton";
+import { DEFAULT_KASIR } from "../lib/debt-utils";
 import { shareReceipt, shareReceiptToWa, copyReceiptText } from "../lib/receipt";
 
 
@@ -39,12 +39,43 @@ export default function HomePage() {
   const [activeTab, setActiveTab] = useState("berjalan");
   const [homeTab, setHomeTab] = useState("pelanggan");
 
-  const [showAddCust, setShowAddCust] = useState(false);
-  const [showEditPhone, setShowEditPhone] = useState(false);
-
-  const [showAddDebt, setShowAddDebt] = useState(false);
-
   const [detailGroupKey, setDetailGroupKey] = useState(null);
+
+  const {
+    balanceForCustomer,
+    lastActivityFor,
+    creditBalanceForCustomer,
+    selectedCustomer,
+    totalUnpaid,
+    countUnpaid,
+    totalCustomers,
+    countLunas,
+    unpaidRatio,
+    ongoingGroups,
+    doneItems,
+    detailGroup,
+  } = useCustomerDerivedData({ customers, debtItems, creditTx, selectedCustomerId, detailGroupKey });
+
+  const {
+    showAddCust,
+    setShowAddCust,
+    showEditPhone,
+    setShowEditPhone,
+    showAddDebt,
+    setShowAddDebt,
+    handleAddCustomer,
+    handleConfirmAddDebt,
+    handleConfirmAddDebtBulk,
+    deleteDebtItem,
+    deleteCustomer,
+    handleSavePhone,
+  } = useCustomerCrud({
+    debtActions,
+    fetchAll,
+    debtItems,
+    selectedCustomerId,
+    onCustomerDeleted: () => setSelectedCustomerId(null),
+  });
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -63,63 +94,6 @@ export default function HomePage() {
     setShowSignOutConfirm(false);
     await supabase.auth.signOut();
     router.push("/login");
-  }
-
-  function balanceForCustomer(custId) {
-    return debtItems
-      .filter((i) => i.customer_id === custId)
-      .reduce((s, i) => s + Math.max(remainingOf(i), 0), 0);
-  }
-  function lastActivityFor(custId) {
-    const items = debtItems.filter((i) => i.customer_id === custId);
-    if (items.length === 0) return null;
-    return items.reduce((a, b) => (new Date(a.date) > new Date(b.date) ? a : b)).date;
-  }
-  function creditBalanceForCustomer(custId) {
-    return creditTx.filter((c) => c.customer_id === custId).reduce((s, c) => s + Number(c.amount), 0);
-  }
-
-  // Dipanggil oleh AddCustomerModal saat form valid & disubmit.
-  // payload = { name, phone }
-  async function handleAddCustomer(payload) {
-    await debtActions.addCustomer(payload);
-    setShowAddCust(false);
-    fetchAll();
-  }
-
-  // Dipanggil oleh AddDebtModal saat form satu barang valid & disubmit.
-  // payload = { item, qty, amount, date, kasir }
-  async function handleConfirmAddDebt(payload) {
-    const invoiceNo = await debtActions.getNextInvoiceNo(payload.date, debtItems);
-    await debtActions.addDebt({
-      customerId: selectedCustomerId,
-      item: payload.item,
-      qty: payload.qty,
-      amount: payload.amount,
-      date: payload.date,
-      kasir: payload.kasir,
-      invoiceNo,
-    });
-    setShowAddDebt(false);
-    fetchAll();
-  }
-
-  // Dipanggil oleh BulkDebtModal saat form banyak barang valid & disubmit.
-  // payload = { customerId, date, kasir, items: [{ item, qty, amount }] }
-  async function handleConfirmAddDebtBulk(payload) {
-    const invoiceNo = await debtActions.getNextInvoiceNo(payload.date, debtItems);
-    const rows = payload.items.map((row) => ({
-      customer_id: payload.customerId,
-      item: row.item,
-      qty: row.qty,
-      amount: row.amount,
-      date: payload.date,
-      kasir: payload.kasir,
-      invoice_no: invoiceNo,
-    }));
-
-    await debtActions.addDebtBulk(rows);
-    fetchAll();
   }
 
   const {
@@ -143,19 +117,6 @@ export default function HomePage() {
     onGroupPaid: () => setDetailGroupKey(null),
   });
 
-  async function deleteDebtItem(itemId) {
-    if (!confirm("Hapus catatan hutang ini beserta riwayat pembayarannya?")) return;
-    await debtActions.deleteDebtItem(itemId);
-    fetchAll();
-  }
-
-  async function deleteCustomer(cust) {
-    if (!confirm(`Hapus pelanggan "${cust.name}" beserta seluruh riwayat hutangnya? Tindakan ini tidak bisa dibatalkan.`)) return;
-    await debtActions.deleteCustomer(cust.id);
-    setSelectedCustomerId(null);
-    fetchAll();
-  }
-
   function selectCustomer(custId) {
     setSelectedCustomerId(custId);
     setActiveTab("berjalan");
@@ -165,64 +126,9 @@ export default function HomePage() {
     setShowEditPhone(true);
   }
 
-  async function handleSavePhone(phone) {
-    await debtActions.updateCustomerPhone(selectedCustomerId, phone);
-    setShowEditPhone(false);
-    fetchAll();
-  }
-
   if (checkingAuth || loading) {
     return <div className="min-h-screen flex items-center justify-center text-sm text-[var(--ink-soft)]">Memuat...</div>;
   }
-
-  const selectedCustomer = customers.find((c) => c.id === selectedCustomerId);
-
-  const totalUnpaid = customers.reduce((s, c) => s + balanceForCustomer(c.id), 0);
-  const countUnpaid = customers.filter((c) => balanceForCustomer(c.id) > 0).length;
-  const totalCustomers = customers.length;
-  const countLunas = totalCustomers - countUnpaid;
-  const unpaidRatio = totalCustomers > 0 ? Math.round((countUnpaid / totalCustomers) * 100) : 0;
-
-  const customerItems = selectedCustomer
-    ? debtItems
-        .filter((i) => i.customer_id === selectedCustomer.id)
-        .slice()
-        .sort((a, b) => new Date(b.date) - new Date(a.date))
-    : [];
-  // Transaksi berjalan diurutkan dari yang paling lama ke yang paling baru,
-  // sehingga orderan terbaru selalu muncul di paling bawah.
-  const ongoingItems = customerItems
-    .filter((it) => remainingOf(it) > 0)
-    .slice()
-    .sort((a, b) => new Date(a.date) - new Date(b.date));
-  const doneItems = customerItems.filter((it) => remainingOf(it) <= 0);
-
-  // Kelompokkan hutang berjalan menjadi "transaksi belanja" berdasarkan
-  // tanggal & kasir yang sama (mis. hasil input banyak barang sekaligus),
-  // supaya tampil sebagai satu kartu transaksi, bukan per barang.
-  const ongoingGroups = (() => {
-    const groups = [];
-    const groupByKey = new Map();
-    ongoingItems.forEach((it) => {
-      const key = it.invoice_no || `${it.date}__${it.kasir || ""}`;
-      if (!groupByKey.has(key)) {
-        const group = {
-          key,
-          date: it.date,
-          kasir: it.kasir || null,
-          // Nomor invoice asli (INV-YYYYMMDD-0001). Data lama sebelum fitur ini
-          // dibuat belum punya invoice_no, jadi dipakaikan kode sementara.
-          trxNo: it.invoice_no || "TRX-" + String(it.id).replace(/-/g, "").slice(0, 8).toUpperCase(),
-          items: [],
-        };
-        groupByKey.set(key, group);
-        groups.push(group);
-      }
-      groupByKey.get(key).items.push(it);
-    });
-    return groups;
-  })();
-  const detailGroup = detailGroupKey ? ongoingGroups.find((g) => g.key === detailGroupKey) : null;
 
   return (
     <div className={`max-w-xl mx-auto px-4 pt-5 ${!selectedCustomer ? "pb-24" : "pb-10"}`}>
@@ -261,22 +167,11 @@ export default function HomePage() {
           )}
 
           {homeTab === "pelanggan" && (
-            <button
+            <FabButton
               onClick={() => setShowAddCust((v) => !v)}
               title={showAddCust ? "Tutup" : "Tambah pelanggan baru"}
-              className="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-[var(--ink)] text-[var(--paper)] shadow-lg flex items-center justify-center z-30 active:scale-90 transition-transform duration-200"
-            >
-              <svg
-                width="22"
-                height="22"
-                viewBox="0 0 24 24"
-                fill="none"
-                className={`transition-transform duration-300 ease-out ${showAddCust ? "rotate-45" : "rotate-0"}`}
-              >
-                <line x1="12" y1="4" x2="12" y2="20" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
-                <line x1="4" y1="12" x2="20" y2="12" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
-              </svg>
-            </button>
+              rotated={showAddCust}
+            />
           )}
 
         </>
@@ -307,16 +202,7 @@ export default function HomePage() {
             onOpenDetail={setDetailGroupKey}
           />
 
-          <button
-            onClick={() => setShowAddDebt(true)}
-            title="Tambah hutang baru"
-            className="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-[var(--ink)] text-[var(--paper)] shadow-lg flex items-center justify-center z-30 active:scale-90 transition-transform duration-200"
-          >
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-              <line x1="12" y1="4" x2="12" y2="20" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
-              <line x1="4" y1="12" x2="20" y2="12" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
-            </svg>
-          </button>
+          <FabButton onClick={() => setShowAddDebt(true)} title="Tambah hutang baru" />
 
           <div className="flex justify-center mt-6 mb-20">
             <button
