@@ -296,3 +296,13 @@ body::before {
   border-color: var(--gold);
   box-shadow: 0 0 0 4px color-mix(in srgb, var(--gold) 18%, transparent);
 }
+
+/* ===== Popup sukses transaksi kasir ===== */
+@keyframes shrinkWidth {
+  from {
+    width: 100%;
+  }
+  to {
+    width: 0%;
+  }
+}

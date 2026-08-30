@@ -16,9 +16,9 @@ import AddCustomerModal from "../components/AddCustomerModal";
 import TransactionDetailModal from "../components/TransactionDetailModal";
 import UseCreditModal from "../components/UseCreditModal";
 import PartialPaymentModal from "../components/PartialPaymentModal";
+import TransactionSuccessPopup from "../components/TransactionSuccessPopup";
 import EditCustomerModal from "../components/EditCustomerModal";
 import PaymentModal from "../components/PaymentModal";
-import AddDebtModal from "../components/AddDebtModal";
 import BulkDebtModal from "../components/BulkDebtModal";
 import CustomerTab from "../components/CustomerTab";
 import CustomerDetailHeader from "../components/CustomerDetailHeader";
@@ -43,6 +43,13 @@ export default function HomePage() {
 
   const [detailGroupKey, setDetailGroupKey] = useState(null);
 
+  // Prefill pelanggan saat diarahkan ke tab Kasir dari tombol "Tambah hutang
+  // baru" di halaman detail pelanggan (lihat goToKasirForCustomer di bawah).
+  // `token` dipakai sebagai key <BulkDebtModal> supaya form kasir "dimulai
+  // ulang" bersih tiap kali diarahkan ke sini -- termasuk saat pelanggan yang
+  // sama diklik dua kali berturut-turut.
+  const [kasirPrefill, setKasirPrefill] = useState(null); // { customerId, token }
+
   const {
     balanceForCustomer,
     lastActivityFor,
@@ -63,10 +70,7 @@ export default function HomePage() {
     setShowAddCust,
     showEditPhone,
     setShowEditPhone,
-    showAddDebt,
-    setShowAddDebt,
     handleAddCustomer,
-    handleConfirmAddDebt,
     handleConfirmAddDebtBulk,
     pendingDeleteItemId,
     requestDeleteDebtItem,
@@ -77,6 +81,8 @@ export default function HomePage() {
     cancelDeleteCustomer,
     confirmDeleteCustomer,
     handleSavePhone,
+    addDebtSuccess,
+    dismissAddDebtSuccess,
   } = useCustomerCrud({
     debtActions,
     fetchAll,
@@ -134,6 +140,16 @@ export default function HomePage() {
     setActiveTab("berjalan");
   }
 
+  // Dipanggil oleh tombol "Tambah hutang baru" di halaman detail pelanggan.
+  // Penambahan hutang sekarang cuma lewat tab Kasir, jadi tombol ini
+  // membawa pengguna ke sana dengan pelanggan yang sedang dibuka sudah
+  // otomatis terisi di form, alih-alih membuka modal terpisah.
+  function goToKasirForCustomer(custId) {
+    setKasirPrefill({ customerId: custId, token: Date.now() });
+    setSelectedCustomerId(null);
+    setHomeTab("kasir");
+  }
+
   function openEditPhoneModal() {
     setShowEditPhone(true);
   }
@@ -159,9 +175,11 @@ export default function HomePage() {
           />
           {homeTab === "kasir" ? (
             <BulkDebtModal
+              key={kasirPrefill?.token || "default"}
               customers={customers}
               getCustomerBalance={balanceForCustomer}
               kasirNames={kasirNames}
+              initialCustomerId={kasirPrefill?.customerId}
               onConfirm={handleConfirmAddDebtBulk}
               onOpenAddCustomer={() => setShowAddCust(true)}
             />
@@ -215,7 +233,7 @@ export default function HomePage() {
             onOpenDetail={setDetailGroupKey}
           />
 
-          <FabButton onClick={() => setShowAddDebt(true)} title="Tambah hutang baru" />
+          <FabButton onClick={() => goToKasirForCustomer(selectedCustomer.id)} title="Tambah hutang baru" />
 
           <div className="flex justify-center mt-6 mb-20">
             <button
@@ -248,15 +266,6 @@ export default function HomePage() {
       {/* Modal: Tambah pelanggan */}
       {showAddCust && (
         <AddCustomerModal onConfirm={handleAddCustomer} onClose={() => setShowAddCust(false)} />
-      )}
-
-      {/* Modal: Tambah hutang */}
-      {showAddDebt && (
-        <AddDebtModal
-          kasirNames={kasirNames}
-          onConfirm={handleConfirmAddDebt}
-          onClose={() => setShowAddDebt(false)}
-        />
       )}
 
       {/* Modal: Konfirmasi hapus catatan hutang */}
@@ -328,6 +337,16 @@ export default function HomePage() {
           onClose={closeBulkPartialModal}
         />
       )}
+
+      {/* Popup: Notifikasi sukses setelah transaksi kasir disimpan */}
+      <TransactionSuccessPopup
+        info={addDebtSuccess}
+        onClose={dismissAddDebtSuccess}
+        onViewCustomer={(custId) => {
+          dismissAddDebtSuccess();
+          selectCustomer(custId);
+        }}
+      />
     </div>
   );
 }

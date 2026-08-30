@@ -28,15 +28,20 @@ import {
 // - getCustomerBalance(custId): fungsi hitung sisa hutang pelanggan, untuk badge lunas/belum di popup
 // - kasirNames: daftar nama kasir untuk pilihan cepat
 // - onConfirm(payload): dipanggil saat submit valid,
-//     payload = { customerId, date, kasir, items: [{ item, qty, amount }] }
+//     payload = { customerId, customerName, date, kasir, items: [{ item, qty, amount }] }
 // - onOpenAddCustomer(): dipanggil saat user memilih "Pelanggan baru" dari popup,
 //     supaya page.jsx yang membuka modal Tambah Pelanggan
 function emptyRow() {
   return { item: "", qty: 1, amount: "", unitPrice: "" };
 }
 
-export default function BulkDebtModal({ customers, getCustomerBalance, kasirNames, onConfirm, onOpenAddCustomer }) {
-  const [customerId, setCustomerId] = useState("");
+// - initialCustomerId: id pelanggan yang otomatis dipilih saat form pertama kali
+//     dirender (dipakai saat pengguna diarahkan ke sini dari tombol "Tambah
+//     hutang baru" di halaman detail pelanggan). Pemanggil bertanggung jawab
+//     memberi `key` yang berubah tiap kali ingin form "dimulai ulang" dengan
+//     prefill baru (lihat komentar di page.jsx).
+export default function BulkDebtModal({ customers, getCustomerBalance, kasirNames, onConfirm, onOpenAddCustomer, initialCustomerId }) {
+  const [customerId, setCustomerId] = useState(initialCustomerId || "");
   const [date, setDate] = useState(() => new Date().toISOString().split("T")[0]);
   const [kasir, setKasir] = useState("");
   const [items, setItems] = useState([emptyRow()]);
@@ -134,6 +139,7 @@ export default function BulkDebtModal({ customers, getCustomerBalance, kasirName
 
     await onConfirm({
       customerId,
+      customerName: selectedCustomer?.name || "",
       date: date || new Date().toISOString().split("T")[0],
       kasir: kasir.trim() || null,
       items: items.map((row) => ({

@@ -4,10 +4,18 @@ import { useState } from "react";
 import { notifyError } from "../lib/notify";
 
 // Menggabungkan seluruh handler CRUD sederhana untuk pelanggan & hutang
-// (tambah pelanggan, tambah hutang satu/banyak barang, hapus hutang, hapus
-// pelanggan, ganti nomor WA) beserta state visibility modal terkaitnya.
-// Polanya sama semua: panggil debtActions.x() lalu fetchAll(), jadi
-// dikumpulkan di satu hook supaya page.jsx tidak penuh handler serupa.
+// (tambah pelanggan, tambah hutang banyak barang sekaligus dari tab Kasir,
+// hapus hutang, hapus pelanggan, ganti nomor WA) beserta state visibility
+// modal terkaitnya. Polanya sama semua: panggil debtActions.x() lalu
+// fetchAll(), jadi dikumpulkan di satu hook supaya page.jsx tidak penuh
+// handler serupa.
+//
+// Catatan: tidak ada lagi alur tambah-hutang satu-barang dari halaman
+// detail pelanggan -- semua penambahan hutang (baik satu maupun banyak
+// barang) sekarang lewat tab Kasir saja, supaya nomor invoice & alur
+// pencatatan konsisten satu pintu. Tombol "Tambah hutang baru" di halaman
+// detail pelanggan mengarahkan ke tab Kasir dengan pelanggan sudah
+// terisi otomatis (lihat goToKasirForCustomer di page.jsx).
 //
 // deleteCustomer tidak menyentuh state selectedCustomerId di page.jsx
 // secara langsung -- ia memanggil onCustomerDeleted() sebagai callback,
@@ -21,9 +29,9 @@ import { notifyError } from "../lib/notify";
 export function useCustomerCrud({ debtActions, fetchAll, debtItems, selectedCustomerId, onCustomerDeleted }) {
   const [showAddCust, setShowAddCust] = useState(false);
   const [showEditPhone, setShowEditPhone] = useState(false);
-  const [showAddDebt, setShowAddDebt] = useState(false);
   const [pendingDeleteItemId, setPendingDeleteItemId] = useState(null);
   const [pendingDeleteCustomer, setPendingDeleteCustomer] = useState(null);
+  const [addDebtSuccess, setAddDebtSuccess] = useState(null);
 
   // Dipanggil oleh AddCustomerModal saat form valid & disubmit.
   // payload = { name, phone }
@@ -37,29 +45,8 @@ export function useCustomerCrud({ debtActions, fetchAll, debtItems, selectedCust
     fetchAll();
   }
 
-  // Dipanggil oleh AddDebtModal saat form satu barang valid & disubmit.
-  // payload = { item, qty, amount, date, kasir }
-  async function handleConfirmAddDebt(payload) {
-    const invoiceNo = await debtActions.getNextInvoiceNo(payload.date, debtItems);
-    const { error } = await debtActions.addDebt({
-      customerId: selectedCustomerId,
-      item: payload.item,
-      qty: payload.qty,
-      amount: payload.amount,
-      date: payload.date,
-      kasir: payload.kasir,
-      invoiceNo,
-    });
-    if (error) {
-      notifyError("Gagal menambah catatan hutang: " + error.message);
-      return;
-    }
-    setShowAddDebt(false);
-    fetchAll();
-  }
-
   // Dipanggil oleh BulkDebtModal saat form banyak barang valid & disubmit.
-  // payload = { customerId, date, kasir, items: [{ item, qty, amount }] }
+  // payload = { customerId, customerName, date, kasir, items: [{ item, qty, amount }] }
   async function handleConfirmAddDebtBulk(payload) {
     const invoiceNo = await debtActions.getNextInvoiceNo(payload.date, debtItems);
     const rows = payload.items.map((row) => ({
@@ -77,7 +64,18 @@ export function useCustomerCrud({ debtActions, fetchAll, debtItems, selectedCust
       notifyError("Gagal menambah catatan hutang: " + error.message);
       return;
     }
+    setAddDebtSuccess({
+      customerId: payload.customerId,
+      customerName: payload.customerName || "",
+      kasir: payload.kasir,
+      itemCount: payload.items.length,
+      total: payload.items.reduce((s, row) => s + (Number(row.amount) || 0), 0),
+    });
     fetchAll();
+  }
+
+  function dismissAddDebtSuccess() {
+    setAddDebtSuccess(null);
   }
 
   // Dipanggil oleh tombol "Hapus" pada catatan hutang -- membuka ConfirmModal,
@@ -140,10 +138,7 @@ export function useCustomerCrud({ debtActions, fetchAll, debtItems, selectedCust
     setShowAddCust,
     showEditPhone,
     setShowEditPhone,
-    showAddDebt,
-    setShowAddDebt,
     handleAddCustomer,
-    handleConfirmAddDebt,
     handleConfirmAddDebtBulk,
     pendingDeleteItemId,
     requestDeleteDebtItem,
@@ -154,5 +149,7 @@ export function useCustomerCrud({ debtActions, fetchAll, debtItems, selectedCust
     cancelDeleteCustomer,
     confirmDeleteCustomer,
     handleSavePhone,
+    addDebtSuccess,
+    dismissAddDebtSuccess,
   };
 }

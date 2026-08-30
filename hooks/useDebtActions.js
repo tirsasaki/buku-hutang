@@ -37,18 +37,6 @@ export function useDebtActions() {
     return supabase.from("customers").insert({ name: name.trim(), phone: (phone || "").trim() || null });
   }
 
-  async function addDebt({ customerId, item, qty, amount, date, kasir, invoiceNo }) {
-    return supabase.from("debt_items").insert({
-      customer_id: customerId,
-      item: item.trim(),
-      qty: parseInt(qty) || 1,
-      amount,
-      date,
-      kasir: (kasir || "").trim() || null,
-      invoice_no: invoiceNo,
-    });
-  }
-
   async function addDebtBulk(rows) {
     return supabase.from("debt_items").insert(rows);
   }
@@ -77,7 +65,6 @@ export function useDebtActions() {
   return {
     getNextInvoiceNo,
     addCustomer,
-    addDebt,
     addDebtBulk,
     recordPayments,
     recordCreditTransaction,
