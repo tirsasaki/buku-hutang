@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>id.tirsasaki.bukuhutang</id>
+  <name>Buku Hutang</name>
+  <summary>Pencatatan hutang pelanggan untuk toko dan warung</summary>
+
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license><project_license>MIT</project_license></project_license>
+
+  <description>
+    <p>
+      Buku Hutang adalah aplikasi pencatatan hutang pelanggan berbasis web,
+      dibuat khusus untuk toko, warung, atau usaha kecil yang masih
+      mengandalkan buku catatan manual. Data tersinkron real-time dan
+      bisa diakses dari HP maupun komputer.
+    </p>
+  </description>
+
+  <launchable type="desktop-id">id.tirsasaki.bukuhutang.desktop</launchable>
+  <url type="homepage">https://bukuhutang.web.id</url>
+
+  <provides>
+    <binary>buku-hutang</binary>
+  </provides>
+
+  <content_rating type="oars-1.1" />
+</component>

@@ -33,6 +33,9 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ],
+    "resources": {
+      "appstream/id.tirsasaki.bukuhutang.appdata.xml": "usr/share/metainfo/id.tirsasaki.bukuhutang.appdata.xml"
+    },
     "android": {
       "debugApplicationIdSuffix": ".debug"
     }
